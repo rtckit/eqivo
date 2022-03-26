@@ -1,0 +1,43 @@
+name: Publish
+
+on:
+  push:
+    tags:
+      - '*'
+
+jobs:
+  PublishAssets:
+    name: PublishAssets
+    runs-on: ubuntu-20.04
+
+    steps:
+      - uses: actions/checkout@v2
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: 8.1
+      - run: curl -OL https://clue.engineering/phar-composer-latest.phar
+      - run: chmod +x phar-composer-latest.phar
+      - run: composer install --no-dev
+      - run: ./phar-composer-latest.phar build .
+      - uses: svenstaro/upload-release-action@v2
+        with:
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file: eqivo.phar
+          asset_name: eqivo.phar
+          tag: ${{ github.ref }}
+          prerelease: true
+          overwrite: true
+      - uses: docker/login-action@v1
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+      - uses: docker/build-push-action@v2
+        with:
+          context: .
+          file: etc/Dockerfile
+          push: true
+          tags: rtckit/eqivo:${{ github.ref_name }}-full
+      - run: curl -OL https://downloads.dockerslim.com/releases/1.37.3/dist_linux.tar.gz
+      - run: tar zfvx dist_linux.tar.gz
+      - run: ./dist_linux/docker-slim build --http-probe-off --continue-after 1 --include-cert-all --include-exe=/usr/local/bin/eqivo --include-exe=/usr/local/bin/php --target rtckit/eqivo:${{ github.ref_name }}-full --tag rtckit/eqivo:${{ github.ref_name }}
+      - run: docker push rtckit/eqivo:${{ github.ref_name }}

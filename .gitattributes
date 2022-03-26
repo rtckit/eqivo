@@ -1,0 +1,7 @@
+/.gitattributes export-ignore
+/.github export-ignore
+/.gitignore export-ignore
+/etc/phpstan.neon export-ignore
+/etc/psalm.xml export-ignore
+/etc/unit.xml.dist export-ignore
+/tests/ export-ignore

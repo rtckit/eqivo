@@ -1,0 +1,116 @@
+#!/usr/bin/env php
+<?php
+
+declare(strict_types=1);
+
+use RTCKit\Eqivo\{
+    App,
+    Config,
+    HttpClient,
+    Inbound,
+    Outbound,
+    Rest
+};
+
+error_reporting(-1);
+set_time_limit(0);
+
+if (is_file(__DIR__ . '/../vendor/autoload.php')) {
+    require __DIR__ . '/../vendor/autoload.php';
+} else if (is_file('./vendor/autoload.php')) {
+    require './vendor/autoload.php';
+} else {
+    die('Cannot locate vendor/autoload.php file!' . PHP_EOL);
+}
+
+if (!defined('PHP_VERSION_ID') || (PHP_VERSION_ID < 80100)) {
+    die('Eqivo requires PHP 8.1+' . PHP_EOL);
+}
+
+foreach (['ctype', 'date', 'filter', 'json', 'libxml', 'pcre', 'simplexml'] as $ext) {
+    if (!extension_loaded($ext)) {
+        die("Please make sure '{$ext}' extension is available and enabled in your PHP configuration" . PHP_EOL);
+    }
+}
+
+$eqivo = new App;
+
+$eqivo->setConfig(new Config\Set);
+
+$eqivo->addConfigResolver(new Config\CliArguments);
+$eqivo->addConfigResolver(new Config\LegacyConfigFile);
+$eqivo->addConfigResolver(new Config\ConfigFile);
+$eqivo->addConfigResolver(new Config\EnvironmentVars);
+$eqivo->resolveConfig();
+
+$eqivo->setHttpClient(new HttpClient);
+
+$eqivo->setInboundServer(
+    (new Inbound\Server)
+        ->setApp($eqivo)
+        ->setController(new Inbound\Controller)
+        ->setElementHandler(new Inbound\Handler\BackgroundJob)
+        ->setElementHandler(new Inbound\Handler\CallUpdate)
+        ->setElementHandler(new Inbound\Handler\ChannelHangupComplete)
+        ->setElementHandler(new Inbound\Handler\ChannelProgress)
+        ->setElementHandler(new Inbound\Handler\ChannelProgressMedia)
+        ->setElementHandler(new Inbound\Handler\ChannelState)
+        ->setElementHandler(new Inbound\Handler\Custom)
+        ->setElementHandler(new Inbound\Handler\RecordStop)
+        ->setElementHandler(new Inbound\Handler\SessionHeartbeat)
+);
+
+$eqivo->setOutboundServer(
+    (new Outbound\Server)
+        ->setApp($eqivo)
+        ->setController(new Outbound\Controller)
+        ->setElementHandler(new Outbound\Conference\Handler)
+        ->setElementHandler(new Outbound\Dial\Handler)
+        ->setElementHandler(new Outbound\GetDigits\Handler)
+        ->setElementHandler(new Outbound\GetSpeech\Handler)
+        ->setElementHandler(new Outbound\Hangup\Handler)
+        ->setElementHandler(new Outbound\Play\Handler)
+        ->setElementHandler(new Outbound\PreAnswer\Handler)
+        ->setElementHandler(new Outbound\Record\Handler)
+        ->setElementHandler(new Outbound\Redirect\Handler)
+        ->setElementHandler(new Outbound\SipTransfer\Handler)
+        ->setElementHandler(new Outbound\Speak\Handler)
+        ->setElementHandler(new Outbound\Wait\Handler)
+);
+
+$eqivo->setRestServer(
+    (new Rest\Server)
+        ->setApp($eqivo)
+        ->setRouteController('POST', '/v0.1/BulkCall/', new Rest\Controller\V0_1\BulkCall)
+        ->setRouteController('POST', '/v0.1/Call/', new Rest\Controller\V0_1\Call)
+        ->setRouteController('POST', '/v0.1/CancelScheduledHangup/', new Rest\Controller\V0_1\CancelScheduledHangup)
+        ->setRouteController('POST', '/v0.1/CancelScheduledPlay/', new Rest\Controller\V0_1\CancelScheduledPlay)
+        ->setRouteController('POST', '/v0.1/ConferenceDeaf/', new Rest\Controller\V0_1\ConferenceDeaf)
+        ->setRouteController('POST', '/v0.1/ConferenceHangup/', new Rest\Controller\V0_1\ConferenceHangup)
+        ->setRouteController('POST', '/v0.1/ConferenceKick/', new Rest\Controller\V0_1\ConferenceKick)
+        ->setRouteController('POST', '/v0.1/ConferenceList/', new Rest\Controller\V0_1\ConferenceList)
+        ->setRouteController('POST', '/v0.1/ConferenceListMembers/', new Rest\Controller\V0_1\ConferenceListMembers)
+        ->setRouteController('POST', '/v0.1/ConferenceMute/', new Rest\Controller\V0_1\ConferenceMute)
+        ->setRouteController('POST', '/v0.1/ConferencePlay/', new Rest\Controller\V0_1\ConferencePlay)
+        ->setRouteController('POST', '/v0.1/ConferenceRecordStart/', new Rest\Controller\V0_1\ConferenceRecordStart)
+        ->setRouteController('POST', '/v0.1/ConferenceRecordStop/', new Rest\Controller\V0_1\ConferenceRecordStop)
+        ->setRouteController('POST', '/v0.1/ConferenceSpeak/', new Rest\Controller\V0_1\ConferenceSpeak)
+        ->setRouteController('POST', '/v0.1/ConferenceUndeaf/', new Rest\Controller\V0_1\ConferenceUndeaf)
+        ->setRouteController('POST', '/v0.1/ConferenceUnmute/', new Rest\Controller\V0_1\ConferenceUnmute)
+        ->setRouteController('POST', '/v0.1/GroupCall/', new Rest\Controller\V0_1\GroupCall)
+        ->setRouteController('POST', '/v0.1/HangupAllCalls/', new Rest\Controller\V0_1\HangupAllCalls)
+        ->setRouteController('POST', '/v0.1/HangupCall/', new Rest\Controller\V0_1\HangupCall)
+        ->setRouteController('POST', '/v0.1/Play/', new Rest\Controller\V0_1\Play)
+        ->setRouteController('POST', '/v0.1/PlayStop/', new Rest\Controller\V0_1\PlayStop)
+        ->setRouteController('POST', '/v0.1/RecordStart/', new Rest\Controller\V0_1\RecordStart)
+        ->setRouteController('POST', '/v0.1/RecordStop/', new Rest\Controller\V0_1\RecordStop)
+        ->setRouteController('POST', '/v0.1/ScheduleHangup/', new Rest\Controller\V0_1\ScheduleHangup)
+        ->setRouteController('POST', '/v0.1/SchedulePlay/', new Rest\Controller\V0_1\SchedulePlay)
+        ->setRouteController('POST', '/v0.1/SendDigits/', new Rest\Controller\V0_1\SendDigits)
+        ->setRouteController('POST', '/v0.1/SoundTouch/', new Rest\Controller\V0_1\SoundTouch)
+        ->setRouteController('POST', '/v0.1/SoundTouchStop/', new Rest\Controller\V0_1\SoundTouchStop)
+        ->setRouteController('POST', '/v0.1/TransferCall/', new Rest\Controller\V0_1\TransferCall)
+);
+
+$eqivo->prepare();
+$eqivo->run();
