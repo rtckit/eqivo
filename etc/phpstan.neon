@@ -1,0 +1,5 @@
+includes:
+    - ../vendor/phpstan/phpstan/conf/bleedingEdge.neon
+parameters:
+    ignoreErrors:
+        - '#Call to an undefined method React\\Promise\\PromiseInterface::otherwise\(\)#'

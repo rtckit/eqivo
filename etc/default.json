@@ -1,0 +1,36 @@
+{
+    "daemonize": false,
+    "appPrefix": "eqivo",
+    "pidFile": "/tmp/eqivo.pid",
+    "cores": [
+        {
+            "eslHost": "127.0.0.1",
+            "eslPort": 8021,
+            "eslPassword": "ClueCon"
+        }
+    ],
+    "defaultHttpMethod": "POST",
+    "defaultAnswerUrl": "http://127.0.0.1:5000/answered/",
+    "defaultHangupUrl": "http://127.0.0.1:5000/hangup/",
+    "extraChannelVars": [],
+    "verifyPeer": true,
+    "verifyPeerName": true,
+    "restServerBindIp": "0.0.0.0",
+    "restServerBindPort": 8088,
+    "restServerMaxHandlers": 1024,
+    "restServerMaxRequestSize": 16384,
+    "restServerLogLevel": "debug",
+    "restAllowedIps": [
+        "127.0.0.1"
+    ],
+    "restAuthId": "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX",
+    "restAuthToken": "YYYYYYYYYYYYYYYYYYYYYYYYYYYYYYYY",
+    "recordUrl": "http://127.0.0.1:5000/recordcomplete/",
+    "outboundServerBindIp": "127.0.0.1",
+    "outboundServerAdvertisedIp": "127.0.0.1",
+    "outboundServerBindPort": 8084,
+    "outboundServerAdvertisedPort": 8084,
+    "outboundServerLogLevel": "debug",
+    "inboundServerLogLevel": "debug",
+    "callHeartbeatUrl": "http://127.0.0.1:5000/heartbeat/"
+}
