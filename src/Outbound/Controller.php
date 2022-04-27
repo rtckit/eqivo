@@ -368,6 +368,15 @@ class Controller implements ControllerInterface
                     return resolve();
                 }
 
+                /* Modeled after:
+                 * https://github.com/plivo/plivoframework/blob/29fc41fb3c887d5d9022a941e87bbeb2269112ff/src/plivo/rest/freeswitch/outboundsocket.py#L530-L531
+                 */
+                if (isset($session->transferInProgress)) {
+                    $this->app->outboundServer->logger->info("Transfer in progress, breaking redirect");
+
+                    return resolve();
+                }
+
                 $session->restXml->next();
 
                 return $this->loopXmlResponse($session);
