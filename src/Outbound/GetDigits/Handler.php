@@ -154,8 +154,6 @@ class Handler implements HandlerInterface
                 $context->numDigits = self::DEFAULT_MAX_DIGITS;
             } else if ($context->numDigits < 1) {
                 throw new RestXmlAttributeException("GetDigits 'numDigits' must be greater than 0");
-            } else {
-                $context->numDigits = self::DEFAULT_MAX_DIGITS;
             }
         } else {
             $context->numDigits = self::DEFAULT_MAX_DIGITS;
@@ -168,8 +166,6 @@ class Handler implements HandlerInterface
                 $context->timeout = self::DEFAULT_TIMEOUT;
             } else if ($context->timeout < 1) {
                 throw new RestXmlAttributeException("GetDigits 'timeout' must be a positive integer");
-            } else {
-                $context->timeout = self::DEFAULT_TIMEOUT;
             }
         } else {
             $context->timeout = self::DEFAULT_TIMEOUT;
