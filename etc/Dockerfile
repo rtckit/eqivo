@@ -1,4 +1,4 @@
-FROM php:8.1.4-cli-bullseye
+FROM php:8.1.5-cli-bullseye
 
 RUN docker-php-ext-install pcntl
 
