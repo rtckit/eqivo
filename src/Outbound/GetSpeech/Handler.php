@@ -253,8 +253,6 @@ class Handler implements HandlerInterface
                 $context->timeout = self::DEFAULT_TIMEOUT;
             } else if ($context->timeout < 1) {
                 throw new RestXmlAttributeException("GetSpeech 'timeout' must be a positive integer");
-            } else {
-                $context->timeout = self::DEFAULT_TIMEOUT;
             }
         } else {
             $context->timeout = self::DEFAULT_TIMEOUT;

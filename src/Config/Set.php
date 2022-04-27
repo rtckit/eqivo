@@ -11,6 +11,8 @@ use Monolog\Logger;
  */
 class Set
 {
+    public const INBOUND_SOCKET_ADDRESS = 'inbound_socket_address';
+
     /* General settings */
     public bool $daemonize = false;
 
@@ -119,7 +121,7 @@ class Set
     /**
      * Configure allowed CIDRs off a mixed list of IPs/CIDRs
      *
-     * @param list<string> $ips Allowed IPs/CIDRs
+     * @param array<mixed> $ips Allowed IPs/CIDRs
      *
      * @return list<string> Errors (if any)
      */
@@ -128,6 +130,10 @@ class Set
         $errs = [];
 
         foreach ($ips as $ip) {
+            if (!is_string($ip)) {
+                continue;
+            }
+
             $ip = trim($ip);
             $bits = null;
 

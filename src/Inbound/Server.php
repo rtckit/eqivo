@@ -113,6 +113,38 @@ class Server extends AbstractServer
                 $core->setClient($eslClient);
                 $this->app->addCore($core);
 
+                /* Advertise the Outbound server as a global variable for highly dynamic FreeSWITCH configurations.
+                 * For example, you can use the following entry in your dialplan(s):
+                 *
+                 *     <!-- eqivo_outbound_socket_address holds the advertised Outbound Server host:port -->
+                 *     <action application="socket" data="${eqivo_outbound_socket_address} async full" />
+                 *
+                 *     <!-- eqivo_local_outbound_socket_address holds the host:port used by this running Eqivo instance -->
+                 *     <action application="socket" data="${eqivo_local_outbound_socket_address} async full" />
+                 *
+                 * Since FreeSWITCH will not resolve any FQDNs, this is useful in environments where Eqivo's IP
+                 * address is not predictable (e.g. orchestrated containers).
+                 */
+                $localSocketAddr = $core->client->getAddress();
+
+                if (!is_null($localSocketAddr)) {
+                    $localIp = parse_url($localSocketAddr, PHP_URL_HOST);
+
+                    if (is_string($localIp)) {
+                        $core->client->api((new ESL\Request\Api())->setParameters(
+                            "global_setvar eqivo_local_outbound_socket_address={$localIp}:{$this->app->config->outboundServerBindPort}"
+                        ));
+
+                        if ($this->app->config->outboundServerAdvertisedIp === $this->app->config::INBOUND_SOCKET_ADDRESS) {
+                            $this->app->config->outboundServerAdvertisedIp = $localIp;
+                        }
+                    }
+                }
+
+                $core->client->api((new ESL\Request\Api())->setParameters(
+                    "global_setvar eqivo_outbound_socket_address={$this->app->config->outboundServerAdvertisedIp}:{$this->app->config->outboundServerAdvertisedPort}"
+                ));
+
                 $core->client->on('event', function (ESL\Response\TextEventJson $response) use ($core) {
                     $event = json_decode($response->getBody() ?? '');
                     assert($event instanceof Event);
