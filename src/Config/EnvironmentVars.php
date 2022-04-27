@@ -177,17 +177,21 @@ class EnvironmentVars implements ResolverInterface
         }
 
         if (isset($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'])) {
-            $err = Set::parseSocketAddr($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'], $ip, $port);
-
-            if ($err) {
-                fwrite(STDERR, 'Malformed ' . self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS environment variable' . PHP_EOL);
-                fwrite(STDERR, $err . PHP_EOL);
+            if ($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'] === Set::INBOUND_SOCKET_ADDRESS) {
+                $config->outboundServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
             } else {
-                assert(!is_null($ip));
-                assert(!is_null($port));
+                $err = Set::parseSocketAddr($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'], $ip, $port);
 
-                $config->outboundServerAdvertisedIp = $ip;
-                $config->outboundServerAdvertisedPort = $port;
+                if ($err) {
+                    fwrite(STDERR, 'Malformed ' . self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS environment variable' . PHP_EOL);
+                    fwrite(STDERR, $err . PHP_EOL);
+                } else {
+                    assert(!is_null($ip));
+                    assert(!is_null($port));
+
+                    $config->outboundServerAdvertisedIp = $ip;
+                    $config->outboundServerAdvertisedPort = $port;
+                }
             }
         }
 

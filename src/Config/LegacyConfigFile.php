@@ -7,6 +7,9 @@ namespace RTCKit\Eqivo\Config;
 use Monolog\Logger;
 use InvalidArgumentException;
 
+/**
+ * @phpstan-import-type Level from \Monolog\Logger
+ */
 class LegacyConfigFile implements ResolverInterface
 {
     public function resolve(Set $config): void
@@ -42,11 +45,11 @@ class LegacyConfigFile implements ResolverInterface
         }
 
         if (isset($legacy['common']) && is_array($legacy['common'])) {
-            if (isset($legacy['common']['DEFAULT_HTTP_METHOD'])) {
+            if (isset($legacy['common']['DEFAULT_HTTP_METHOD']) && is_string($legacy['common']['DEFAULT_HTTP_METHOD'])) {
                 $config->defaultHttpMethod = $legacy['common']['DEFAULT_HTTP_METHOD'];
             }
 
-            if (isset($legacy['common']['DEFAULT_ANSWER_URL'])) {
+            if (isset($legacy['common']['DEFAULT_ANSWER_URL']) && is_string($legacy['common']['DEFAULT_ANSWER_URL'])) {
                 if (!filter_var($legacy['common']['DEFAULT_ANSWER_URL'], FILTER_VALIDATE_URL)) {
                     fwrite(STDERR, 'Malformed DEFAULT_ANSWER_URL (common) line in legacy configuration file' . PHP_EOL);
                 } else {
@@ -54,7 +57,7 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['common']['DEFAULT_HANGUP_URL'])) {
+            if (isset($legacy['common']['DEFAULT_HANGUP_URL']) && is_string($legacy['common']['DEFAULT_HANGUP_URL'])) {
                 if (!filter_var($legacy['common']['DEFAULT_HANGUP_URL'], FILTER_VALIDATE_URL)) {
                     fwrite(STDERR, 'Malformed DEFAULT_HANGUP_URL (common) line in legacy configuration file' . PHP_EOL);
                 } else {
@@ -62,15 +65,15 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['common']['AUTH_ID'])) {
+            if (isset($legacy['common']['AUTH_ID']) && is_string($legacy['common']['AUTH_ID'])) {
                 $config->restAuthId = $legacy['common']['AUTH_ID'];
             }
 
-            if (isset($legacy['common']['AUTH_TOKEN'])) {
+            if (isset($legacy['common']['AUTH_TOKEN']) && is_string($legacy['common']['AUTH_TOKEN'])) {
                 $config->restAuthToken = $legacy['common']['AUTH_TOKEN'];
             }
 
-            if (isset($legacy['common']['EXTRA_FS_VARS'])) {
+            if (isset($legacy['common']['EXTRA_FS_VARS']) && is_string($legacy['common']['EXTRA_FS_VARS'])) {
                 $config->extraChannelVars = array_filter(
                     array_map('trim', explode(',', $legacy['common']['EXTRA_FS_VARS'])),
                     function (string $value): bool {
@@ -81,7 +84,7 @@ class LegacyConfigFile implements ResolverInterface
         }
 
         if (isset($legacy['rest_server']) && is_array($legacy['rest_server'])) {
-            if (isset($legacy['rest_server']['ALLOWED_IPS'])) {
+            if (isset($legacy['rest_server']['ALLOWED_IPS']) && is_string($legacy['rest_server']['ALLOWED_IPS'])) {
                 $allowed = explode(',', $legacy['rest_server']['ALLOWED_IPS']);
                 $errs = $config->setRestAllowedIps($allowed);
 
@@ -90,7 +93,7 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['rest_server']['HTTP_ADDRESS'])) {
+            if (isset($legacy['rest_server']['HTTP_ADDRESS']) && is_string($legacy['rest_server']['HTTP_ADDRESS'])) {
                 $err = Set::parseSocketAddr($legacy['rest_server']['HTTP_ADDRESS'], $ip, $port);
 
                 if ($err) {
@@ -105,14 +108,14 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['rest_server']['FS_INBOUND_ADDRESS'])) {
+            if (isset($legacy['rest_server']['FS_INBOUND_ADDRESS']) && is_string($legacy['rest_server']['FS_INBOUND_ADDRESS'])) {
                 $err = Set::parseHostPort($legacy['rest_server']['FS_INBOUND_ADDRESS'], $host, $port);
 
                 if ($err) {
                     fwrite(STDERR, 'Malformed FS_INBOUND_ADDRESS (rest_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {
-                    if (!isset($legacy['rest_server']['FS_INBOUND_PASSWORD'])) {
+                    if (!isset($legacy['rest_server']['FS_INBOUND_PASSWORD']) || !is_string($legacy['rest_server']['FS_INBOUND_PASSWORD'])) {
                         fwrite(STDERR, 'Missing FS_INBOUND_PASSWORD (rest_server) line in legacy configuration file' . PHP_EOL);
                     } else {
                         $core = new Core;
@@ -129,7 +132,7 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['rest_server']['RECORD_URL'])) {
+            if (isset($legacy['rest_server']['RECORD_URL']) && is_string($legacy['rest_server']['RECORD_URL'])) {
                 if (!filter_var($legacy['rest_server']['RECORD_URL'], FILTER_VALIDATE_URL)) {
                     fwrite(STDERR, 'Malformed RECORD_URL (rest_server) line in legacy configuration file' . PHP_EOL);
                 } else {
@@ -137,7 +140,7 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['rest_server']['CALL_HEARTBEAT_URL'])) {
+            if (isset($legacy['rest_server']['CALL_HEARTBEAT_URL']) && is_string($legacy['rest_server']['CALL_HEARTBEAT_URL'])) {
                 if (!filter_var($legacy['rest_server']['CALL_HEARTBEAT_URL'], FILTER_VALIDATE_URL)) {
                     fwrite(STDERR, 'Malformed CALL_HEARTBEAT_URL (rest_server) line in legacy configuration file' . PHP_EOL);
                 } else {
@@ -147,7 +150,9 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['rest_server']['LOG_LEVEL'])) {
                 try {
-                    $config->inboundServerLogLevel = $config->restServerLogLevel = Logger::toMonologLevel($legacy['rest_server']['LOG_LEVEL']);
+                    /** @var Level */
+                    $inboundServerLogLevel = $legacy['rest_server']['LOG_LEVEL'];
+                    $config->inboundServerLogLevel = Logger::toMonologLevel($inboundServerLogLevel);
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (rest_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $e->getMessage() . PHP_EOL);
@@ -160,17 +165,17 @@ class LegacyConfigFile implements ResolverInterface
                 }
             }
 
-            if (isset($legacy['rest_server']['USER'])) {
+            if (isset($legacy['rest_server']['USER']) && is_string($legacy['rest_server']['USER'])) {
                 $config->userName = $legacy['rest_server']['USER'];
             }
 
-            if (isset($legacy['rest_server']['GROUP'])) {
+            if (isset($legacy['rest_server']['GROUP']) && is_string($legacy['rest_server']['GROUP'])) {
                 $config->groupName = $legacy['rest_server']['GROUP'];
             }
         }
 
         if (isset($legacy['outbound_server']) && is_array($legacy['outbound_server'])) {
-            if (isset($legacy['outbound_server']['FS_OUTBOUND_ADDRESS'])) {
+            if (isset($legacy['outbound_server']['FS_OUTBOUND_ADDRESS']) && is_string($legacy['outbound_server']['FS_OUTBOUND_ADDRESS'])) {
                 $err = Set::parseSocketAddr($legacy['outbound_server']['FS_OUTBOUND_ADDRESS'], $ip, $port);
 
                 if ($err) {
@@ -191,7 +196,10 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['outbound_server']['LOG_LEVEL'])) {
                 try {
-                    $config->outboundServerLogLevel = Logger::toMonologLevel($legacy['outbound_server']['LOG_LEVEL']);
+
+                    /** @var Level */
+                    $outboundServerLogLevel = $legacy['outbound_server']['LOG_LEVEL'];
+                    $config->outboundServerLogLevel = Logger::toMonologLevel($outboundServerLogLevel);
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (outbound_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $e->getMessage() . PHP_EOL);
