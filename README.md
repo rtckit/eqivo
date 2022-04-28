@@ -14,7 +14,7 @@
 
 A reimplementation of the open source [Plivo framework](https://github.com/plivo/plivoframework) on top of [ReactPHP](https://reactphp.org) and [FreeSWITCH](https://github.com/signalwire/freeswitch). If you are not familiar with the legacy platform, please inspect its [repository](https://github.com/plivo/plivoframework) as well as the archived web resources [here](https://web.archive.org/web/20171127130133/http://docs.plivo.org/), [here](https://web.archive.org/web/20171207074507/http://docs.plivo.org/get-started/) and [here](https://web.archive.org/web/20190108064818/https://www.plivo.com/open-source/).
 
-For integrating **Eqivo** in your projects, please refer to **[https://eqivo.org](https://eqivo.org)**. If you want to contribute or to extend this project, keep reading.
+For integrating **Eqivo** in your projects, please refer to **[https://eqivo.org](https://eqivo.org)** as well as to **[rtckit/eqivo-sandbox](https://github.com/rtckit/eqivo-sandbox)**. If you want to contribute or to extend this project, keep reading.
 
 ## Requirements
 
