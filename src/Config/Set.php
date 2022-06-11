@@ -4,11 +4,8 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Config;
 
-use Monolog\Logger;
+use Monolog\Level;
 
-/**
- * @phpstan-import-type Level from \Monolog\Logger
- */
 class Set
 {
     public const INBOUND_SOCKET_ADDRESS = 'inbound_socket_address';
@@ -55,8 +52,7 @@ class Set
 
     public int $restServerMaxRequestSize = 16384;
 
-    /** @phpstan-var Level */
-    public int $restServerLogLevel = Logger::DEBUG;
+    public Level $restServerLogLevel = Level::Debug;
 
     /** @var list<string> Allowed CIDRs */
     public array $restAllowedIps = [];
@@ -76,12 +72,10 @@ class Set
 
     public int $outboundServerAdvertisedPort;
 
-    /** @phpstan-var Level */
-    public int $outboundServerLogLevel = Logger::DEBUG;
+    public Level $outboundServerLogLevel = Level::Debug;
 
     /* Inbound Server settings */
-    /** @phpstan-var Level */
-    public int $inboundServerLogLevel = Logger::DEBUG;
+    public Level $inboundServerLogLevel = Level::Debug;
 
     public string $callHeartbeatUrl;
 
