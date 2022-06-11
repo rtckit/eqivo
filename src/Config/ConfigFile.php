@@ -6,14 +6,11 @@ namespace RTCKit\Eqivo\Config;
 
 use RTCKit\Eqivo\Exception\EqivoException;
 
-use Monolog\Logger;
+use Monolog\Level;
 use Symfony\Component\Yaml\Yaml;
 use Closure;
 use InvalidArgumentException;
 
-/**
- * @phpstan-import-type Level from \Monolog\Logger
- */
 class ConfigFile implements ResolverInterface
 {
     public function resolve(Set $config): void
@@ -198,9 +195,12 @@ class ConfigFile implements ResolverInterface
 
         if (isset($input['restServerLogLevel'])) {
             try {
-                /** @var Level */
-                $restServerLogLevel = $input['restServerLogLevel'];
-                $config->restServerLogLevel = Logger::toMonologLevel($restServerLogLevel);
+                /**
+                 * Allow Monolog to deal with the verbosity level matching
+                 * @psalm-suppress ArgumentTypeCoercion
+                 * @phpstan-ignore-next-line
+                 */
+                $config->restServerLogLevel = Level::fromName($input['restServerLogLevel']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `restServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
@@ -274,9 +274,12 @@ class ConfigFile implements ResolverInterface
 
         if (isset($input['outboundServerLogLevel'])) {
             try {
-                /** @var Level */
-                $outboundServerLogLevel = $input['outboundServerLogLevel'];
-                $config->outboundServerLogLevel = Logger::toMonologLevel($outboundServerLogLevel);
+                /**
+                 * Allow Monolog to deal with the verbosity level matching
+                 * @psalm-suppress ArgumentTypeCoercion
+                 * @phpstan-ignore-next-line
+                 */
+                $config->outboundServerLogLevel = Level::fromName($input['outboundServerLogLevel']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `outboundServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
@@ -284,9 +287,12 @@ class ConfigFile implements ResolverInterface
 
         if (isset($input['inboundServerLogLevel'])) {
             try {
-                /** @var Level */
-                $inboundServerLogLevel = $input['inboundServerLogLevel'];
-                $config->inboundServerLogLevel = Logger::toMonologLevel($inboundServerLogLevel);
+                /**
+                 * Allow Monolog to deal with the verbosity level matching
+                 * @psalm-suppress ArgumentTypeCoercion
+                 * @phpstan-ignore-next-line
+                 */
+                $config->inboundServerLogLevel = Level::fromName($input['inboundServerLogLevel']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `inboundServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }

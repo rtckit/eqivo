@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Config;
 
-use Monolog\Logger;
+use Monolog\Level;
 use InvalidArgumentException;
 
 class CliArguments implements ResolverInterface
@@ -206,7 +206,7 @@ class CliArguments implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->restServerLogLevel = Logger::toMonologLevel($args['rest-log-level']);
+                $config->restServerLogLevel = Level::fromName($args['rest-log-level']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed --rest-log-level argument: ' . $e->getMessage() . PHP_EOL);
             }
@@ -278,7 +278,7 @@ class CliArguments implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->outboundServerLogLevel = Logger::toMonologLevel($args['outbound-log-level']);
+                $config->outboundServerLogLevel = Level::fromName($args['outbound-log-level']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed --outbound-log-level argument: ' . $e->getMessage() . PHP_EOL);
             }
@@ -291,7 +291,7 @@ class CliArguments implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->inboundServerLogLevel = Logger::toMonologLevel($args['inbound-log-level']);
+                $config->inboundServerLogLevel = Level::fromName($args['inbound-log-level']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed --inbound-log-level argument: ' . $e->getMessage() . PHP_EOL);
             }
