@@ -16,7 +16,7 @@ use const SIGTERM;
 
 class App
 {
-    public const VERSION = '0.8.0';
+    public const VERSION = '0.5.3';
 
     public Config\Set $config;
 
