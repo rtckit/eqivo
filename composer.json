@@ -1,7 +1,7 @@
 {
     "name": "rtckit/eqivo",
     "description": "Telephony API Platform",
-    "version": "0.5.2",
+    "version": "0.5.3",
     "keywords": [
         "telecommunications",
         "voip",
@@ -40,16 +40,16 @@
         "rtckit/esl": "^0.8",
         "rtckit/react-esl": "^0.8",
         "rtckit/sip": "^0.7",
-        "symfony/yaml": "^6.0",
-        "wikimedia/ip-set": "^3.0",
+        "symfony/yaml": "^6.1",
+        "wikimedia/ip-set": "^3.1",
         "wyrihaximus/react-psr-3-stdio": "^3.0"
     },
     "require-dev": {
         "clue/block-react": "^1.5",
-        "phpstan/phpstan": "^1.6",
+        "phpstan/phpstan": "^1.7",
         "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.22",
-        "zircote/swagger-php": "^4.3"
+        "vimeo/psalm": "^4.23",
+        "zircote/swagger-php": "^4.4"
     },
     "suggest": {
         "ext-pcntl": "Enables daemonization support",
