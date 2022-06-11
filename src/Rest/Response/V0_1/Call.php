@@ -24,6 +24,28 @@ class Call
 
     public const MESSAGE_UNKNOWN_CORE = 'Unknown Core UUID';
 
+    public const MESSAGE_INVALID_AMD = 'MachineDetection is not Valid';
+
+    public const MESSAGE_INVALID_AMD_METHOD = "AsyncAmdStatusCallbackMethod must be 'GET' or 'POST'";
+
+    public const MESSAGE_AMD_URL_INVALID = 'AsyncAmdStatusCallback is not Valid';
+
+    public const MESSAGE_AMD_TIMEOUT_NOT_INT = 'MachineDetectionTimeout must be an integer';
+
+    public const MESSAGE_AMD_TIMEOUT_BAD_RANGE = 'MachineDetectionTimeout Parameter must be between 3 and 59';
+
+    public const MESSAGE_AMD_SPEECH_THRESHOLD_NOT_INT = 'MachineDetectionSpeechThreshold must be an integer';
+
+    public const MESSAGE_AMD_SPEECH_THRESHOLD_BAD_RANGE = 'MachineDetectionSpeechThreshold Parameter must be between 1000 and 6000';
+
+    public const MESSAGE_AMD_SILENCE_THRESHOLD_NOT_INT = 'MachineDetectionSpeechEndThreshold must be an integer';
+
+    public const MESSAGE_AMD_SILENCE_THRESHOLD_BAD_RANGE = 'MachineDetectionSpeechEndThreshold Parameter must be between 500 and 5000';
+
+    public const MESSAGE_AMD_INITIAL_SILENCE_NOT_INT = 'MachineDetectionSilenceTimeout must be an integer';
+
+    public const MESSAGE_AMD_INITIAL_SILENCE_BAD_RANGE = 'MachineDetectionSilenceTimeout Parameter must be between 2000 and 10000';
+
     /**
      * Response message
      *

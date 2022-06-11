@@ -1,0 +1,36 @@
+FROM rtckit/slimswitch-builder:v1.10.7
+
+# Build with:
+#
+#   docker build -f ./etc/Dockerfile.freeswitch -t rtckit/eqivo-freeswitch-builder:v1.10.7 .
+#
+# Minify with rtckit/slimswitch:
+#
+#   ./bin/mkslim.sh \
+#     -r rtckit/eqivo-freeswitch-builder \
+#     -m mod_event_socket \
+#     -m mod_commands \
+#     -m mod_dialplan_xml \
+#     -m mod_dptools \
+#     -m mod_sofia \
+#     -m mod_tone_stream \
+#     -m mod_sndfile \
+#     -m mod_conference \
+#     -m mod_flite \
+#     -m mod_say_en \
+#     -m mod_soundtouch \
+#     -m mod_amd \
+#     -m mod_http_cache \
+#     -m mod_shout \
+#     -s rtckit/eqivo-freeswitch
+#
+# mod_http_cache and mod_shout are not required by Eqivo but are fairly common in practice
+
+RUN cd /usr/src/freeswitch* && \
+  wget https://codeload.github.com/rtckit/mod_amd/tar.gz/refs/heads/master -O amd.tar.gz && \
+  tar zfvx amd.tar.gz -C ./src/mod/applications && \
+  mv ./src/mod/applications/mod_amd-master ./src/mod/applications/mod_amd && \
+  sed -i 's#src/mod/applications/mod_mariadb/Makefile#src/mod/applications/mod_mariadb/Makefile\n\t\tsrc/mod/applications/mod_amd/Makefile#' configure.ac && \
+  ./bootstrap.sh -j && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-debug && \
+  echo applications/mod_amd >> ./modules.conf && \
+  make -j mod_amd && make mod_amd-install
