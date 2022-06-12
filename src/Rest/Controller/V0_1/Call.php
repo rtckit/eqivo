@@ -62,6 +62,12 @@ class Call implements ControllerInterface
     use DialerTrait;
 
     /** @var string */
+    public const AMD_ENABLE = 'Enable';
+
+    /** @var string */
+    public const AMD_MSG_END = 'DetectMessageEnd';
+
+    /** @var string */
     public const DEFAULT_AMD_METHOD = 'POST';
 
     /** @var int */
@@ -191,7 +197,7 @@ class Call implements ControllerInterface
          */
         if (
             isset($inquiry->MachineDetection) &&
-            !in_array($inquiry->MachineDetection, ['Enable', 'DetectMessageEnd'])
+            !in_array($inquiry->MachineDetection, [static::AMD_ENABLE, static::AMD_MSG_END])
         ) {
             $response->Message = CallResponse::MESSAGE_INVALID_AMD;
             $response->Success = false;
@@ -410,6 +416,23 @@ class Call implements ControllerInterface
                 HangupCauseEnum::ALLOTTED_TIMEOUT->value .
                 " {$this->app->config->appPrefix}_request_uuid {$response->RequestUUID}'";
             $vars[] = "{$this->app->config->appPrefix}_sched_hangup_id={$schedHup->uuid}";
+        }
+
+        if (isset($inquiry->MachineDetection)) {
+            $vars[] = "{$this->app->config->appPrefix}_amd=on";
+
+            if ($inquiry->MachineDetection === static::AMD_MSG_END) {
+                $vars[] = "{$this->app->config->appPrefix}_amd_msg_end=on";
+            }
+
+            $vars[] = "{$this->app->config->appPrefix}_amd_async=" . ($inquiry->AsyncAMD ? 'on' : 'off');
+
+            if (isset($inquiry->AsyncAmdStatusCallback)) {
+                $vars[] = "{$this->app->config->appPrefix}_amd_url={$inquiry->AsyncAmdStatusCallback}";
+            }
+
+            $amdTimeoutMs = (int)$inquiry->MachineDetectionTimeout * 1000;
+            $vars[] = "execute_on_answer='amd total_analysis_time={$amdTimeoutMs} maximum_word_length={$inquiry->MachineDetectionSpeechThreshold} after_greeting_silence={$inquiry->MachineDetectionSpeechEndThreshold} initial_silence={$inquiry->MachineDetectionSilenceTimeout}'";
         }
 
         $vars[] = "{$this->app->config->appPrefix}_from='{$inquiry->From}'";
