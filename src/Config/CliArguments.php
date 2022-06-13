@@ -11,10 +11,6 @@ class CliArguments implements ResolverInterface
 {
     public function resolve(Set $config): void
     {
-        if (!isset($_SERVER['argv'][1])) {
-            return;
-        }
-
         $args = getopt(
             'hc:fdp:',
             [
@@ -308,7 +304,9 @@ class CliArguments implements ResolverInterface
 
     protected function help(): never
     {
-        echo 'Usage: ' . $_SERVER['argv'][0] . ' [options]' . PHP_EOL . PHP_EOL . 'Options:' . PHP_EOL;
+        $cmd = !is_array($_SERVER['argv']) || empty($_SERVER['argv'][0]) ? './bin/eqivo' : $_SERVER['argv'][0];
+
+        echo 'Usage: ' . $cmd . ' [options]' . PHP_EOL . PHP_EOL . 'Options:' . PHP_EOL;
         echo <<<EOD
   --help | -h                     show this help message and exit
   --config | -c <FILE>            set config file to FILE
