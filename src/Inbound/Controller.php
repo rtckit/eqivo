@@ -51,7 +51,7 @@ class Controller implements ControllerInterface
             EventEnum::SESSION_HEARTBEAT->value,
             EventEnum::CALL_UPDATE->value,
             EventEnum::RECORD_STOP->value,
-            EventEnum::CUSTOM->value . ' conference::maintenance',
+            EventEnum::CUSTOM->value . ' conference::maintenance amd::info avmd::beep avmd::timeout',
         ]));
     }
 

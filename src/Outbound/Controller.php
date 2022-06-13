@@ -19,6 +19,7 @@ use RTCKit\Eqivo\Exception\{
     RestXmlSyntaxException,
     UnrecognizedRestXmlException
 };
+use RTCKit\Eqivo\Rest\Controller\V0_1\Call;
 
 use Psr\Http\Message\ResponseInterface;
 use React\EventLoop\Loop;
@@ -33,6 +34,7 @@ use RTCKit\SIP\Exception\SIPException;
 use SimpleXMLIterator;
 use stdClass as Event;
 use function React\Promise\{
+    all,
     reject,
     resolve
 };
@@ -209,6 +211,42 @@ class Controller implements ControllerInterface
         }
 
         $logger->info('Processing Call');
+
+        /* Check if AMD is enabled */
+        if (
+            !empty($context["variable_{$this->app->config->appPrefix}_amd"]) &&
+            ($context["variable_{$this->app->config->appPrefix}_amd"] === 'on')
+        ) {
+            /* If synchronous, call flow execution must be blocked until AMD resolution is ready */
+            if (
+                !empty($context["variable_{$this->app->config->appPrefix}_amd_async"]) &&
+                ($context["variable_{$this->app->config->appPrefix}_amd_async"] === 'off')
+            ) {
+                $amdTimeoutAdj = (int)($context["variable_{$this->app->config->appPrefix}_amd_timeout"] ?? Call::DEFAULT_AMD_TIMEOUT) + 1;
+
+                $logger->info('Activating synchronous AMD');
+
+                all([
+                    $session->client->sendMsg(
+                        (new ESL\Request\SendMsg)
+                            ->setHeader('call-command', 'execute')
+                            ->setHeader('execute-app-name', 'set')
+                            ->setHeader('execute-app-arg', "{$this->app->config->appPrefix}_amd_target_url={$session->targetUrl}")
+                            ->setHeader('event-lock', 'true')
+                    ),
+                    $session->client->sendMsg(
+                        (new ESL\Request\SendMsg)
+                            ->setHeader('call-command', 'execute')
+                            ->setHeader('execute-app-name', 'playback')
+                            ->setHeader('execute-app-arg', 'file_string://silence_stream://' . ($amdTimeoutAdj * 1000))
+                    ),
+                ]);
+
+                return;
+            } else {
+                $logger->info('Activating asynchronous AMD');
+            }
+        }
 
         $this->fetchAndExecuteRestXml($session, $session->targetUrl)
             ->then(function () use ($session): PromiseInterface {

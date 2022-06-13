@@ -94,6 +94,7 @@ class Call implements ControllerInterface
         return $this->authenticate($request)
             ->then(function () use ($request): PromiseInterface {
                 $inquiry = CallInquiry::factory($request);
+
                 $response = new CallResponse;
                 $response->RestApiServer = $this->app->config->restServerAdvertisedHost;
 
@@ -226,7 +227,7 @@ class Call implements ControllerInterface
                 $inquiry->AsyncAmdStatusCallbackMethod = static::DEFAULT_AMD_METHOD;
             }
 
-            if (!empty($inquiry->AsyncAmdStatusCallback) && !filter_var($inquiry->AsyncAmdStatusCallback, FILTER_VALIDATE_URL)) {
+            if (isset($inquiry->AsyncAmdStatusCallback) && !filter_var($inquiry->AsyncAmdStatusCallback, FILTER_VALIDATE_URL)) {
                 $response->Message = CallResponse::MESSAGE_AMD_URL_INVALID;
                 $response->Success = false;
 
@@ -420,6 +421,7 @@ class Call implements ControllerInterface
 
         if (isset($inquiry->MachineDetection)) {
             $vars[] = "{$this->app->config->appPrefix}_amd=on";
+            $vars[] = "{$this->app->config->appPrefix}_amd_timeout={$inquiry->MachineDetectionTimeout}";
 
             if ($inquiry->MachineDetection === static::AMD_MSG_END) {
                 $vars[] = "{$this->app->config->appPrefix}_amd_msg_end=on";
@@ -427,8 +429,12 @@ class Call implements ControllerInterface
 
             $vars[] = "{$this->app->config->appPrefix}_amd_async=" . ($inquiry->AsyncAMD ? 'on' : 'off');
 
-            if (isset($inquiry->AsyncAmdStatusCallback)) {
+            if ($inquiry->AsyncAMD && isset($inquiry->AsyncAmdStatusCallback)) {
                 $vars[] = "{$this->app->config->appPrefix}_amd_url={$inquiry->AsyncAmdStatusCallback}";
+
+                if (isset($inquiry->AsyncAmdStatusCallbackMethod)) {
+                    $vars[] = "{$this->app->config->appPrefix}_amd_method={$inquiry->AsyncAmdStatusCallbackMethod}";
+                }
             }
 
             $amdTimeoutMs = (int)$inquiry->MachineDetectionTimeout * 1000;

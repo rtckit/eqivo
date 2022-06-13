@@ -20,6 +20,7 @@ FROM rtckit/slimswitch-builder:v1.10.7
 #     -m mod_say_en \
 #     -m mod_soundtouch \
 #     -m mod_amd \
+#     -m mod_avmd \
 #     -m mod_http_cache \
 #     -m mod_shout \
 #     -s rtckit/eqivo-freeswitch
@@ -27,9 +28,9 @@ FROM rtckit/slimswitch-builder:v1.10.7
 # mod_http_cache and mod_shout are not required by Eqivo but are fairly common in practice
 
 RUN cd /usr/src/freeswitch* && \
-  wget https://codeload.github.com/rtckit/mod_amd/tar.gz/refs/heads/master -O amd.tar.gz && \
+  wget https://codeload.github.com/rtckit/mod_amd/tar.gz/d49f81f -O amd.tar.gz && \
   tar zfvx amd.tar.gz -C ./src/mod/applications && \
-  mv ./src/mod/applications/mod_amd-master ./src/mod/applications/mod_amd && \
+  mv ./src/mod/applications/mod_amd-d49f81f ./src/mod/applications/mod_amd && \
   sed -i 's#src/mod/applications/mod_mariadb/Makefile#src/mod/applications/mod_mariadb/Makefile\n\t\tsrc/mod/applications/mod_amd/Makefile#' configure.ac && \
   ./bootstrap.sh -j && ./configure --prefix=/usr --sysconfdir=/etc --localstatedir=/var --disable-debug && \
   echo applications/mod_amd >> ./modules.conf && \

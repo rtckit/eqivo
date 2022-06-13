@@ -185,6 +185,18 @@ class Session
 
     public bool $preAnswer = false;
 
+    public TimerInterface $avmdTimer;
+
+    public int $amdDuration;
+
+    public string $amdAnsweredBy;
+
+    public bool $amdAsync;
+
+    public string $amdMethod;
+
+    public string $amdUrl;
+
     function __construct() {
         self::$instances++;
     }
