@@ -44,6 +44,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL which will provide the RestXML once the call connects",
+     *     example="https://example.com/answer/",
      * )
      */
     public string $AnswerUrl;
@@ -51,6 +52,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Caller Name to be set for the call",
+     *     example="Test",
      * )
      */
     public string $CallerName;
@@ -58,6 +60,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call hangup notification will be POSTed. `HangupCause` is added to the usual call [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/hangup/",
      * )
      */
     public string $HangupUrl;
@@ -65,6 +68,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call ringing notification will be POSTed. `RequestUUID` and `CallUUID` is added to the usual [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/ring/",
      * )
      */
     public string $RingUrl;
@@ -145,6 +149,90 @@ class Call
      * )
      */
     public string $CoreUUID;
+
+    /**
+     * @OA\Property(
+     *     description="Enables answering machine detection; optionally, it waits until the greeting message has been played back (an Eqivo extension)",
+     *     example="Enable",
+     *     enum={"Enable", "DetectMessageEnd"},
+     * )
+     */
+    public string $MachineDetection;
+
+    /**
+     * @OA\Property(
+     *     description="When set to `true`, the call flow execution is blocked until answering machine detection is complete (an Eqivo extension)",
+     *     type="bool",
+     *     default=false,
+     *     example=true,
+     * )
+     */
+    public string|bool $AsyncAMD;
+
+    /**
+     * @OA\Property(
+     *     description="HTTP method to be used when answering machine detection is completed (an Eqivo extension)",
+     *     example="GET",
+     *     enum={"POST", "GET"},
+     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_METHOD,
+     * )
+     */
+    public string $AsyncAmdStatusCallbackMethod;
+
+    /**
+     * @OA\Property(
+     *     description="Fully qualified URL to which the answering machine detection result will be sent. `AnsweredBy` and `MachineDetectionDuration` are appended to the usual [call notification parameters](#/components/schemas/CallNotificationParameters) (an Eqivo extension)",
+     * )
+     */
+    public string $AsyncAmdStatusCallback;
+
+    /**
+     * @OA\Property(
+     *     description="Amount of time (in seconds) allotted for answering machine detection assessment (an Eqivo extension)",
+     *     type="int",
+     *     minimum=3,
+     *     maximum=59,
+     *     example=5,
+     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_TIMEOUT,
+     * )
+     */
+    public string|int $MachineDetectionTimeout;
+
+    /**
+     * @OA\Property(
+     *     description="Speech activity/utterance threshold (in milliseconds, an Eqivo extension)",
+     *     type="int",
+     *     minimum=1000,
+     *     maximum=6000,
+     *     example=2000,
+     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_SPEECH_THRESHOLD,
+     * )
+     */
+    public string|int $MachineDetectionSpeechThreshold;
+
+    /**
+     * @OA\Property(
+     *     description="Silence threshold (in milliseconds, an Eqivo extension)",
+     *     type="int",
+     *     minimum=500,
+     *     maximum=5000,
+     *     example=1000,
+     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_SILENCE_THRESHOLD,
+     * )
+     */
+    public string|int $MachineDetectionSpeechEndThreshold;
+
+    /**
+     * @OA\Property(
+     *     description="Initial silence threshold (in milliseconds, an Eqivo extension)",
+     *     type="int",
+     *     minimum=2000,
+     *     maximum=10000,
+     *     example=3000,
+     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_INITIAL_SILENCE,
+     * )
+     */
+    public string|int $MachineDetectionSilenceTimeout;
 
     public Core $core;
 }

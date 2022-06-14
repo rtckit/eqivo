@@ -185,6 +185,33 @@ class Session
 
     public bool $preAnswer = false;
 
+    public TimerInterface $avmdTimer;
+
+    /**
+     * @OA\Property(
+     *      property="MachineDetectionDuration",
+     *      description="Actual answering machine detection assessment duration (in milliseconds)",
+     *      example="19",
+     * )
+     */
+    public int $amdDuration;
+
+    /**
+     * @OA\Property(
+     *      property="AnsweredBy",
+     *      description="Answering actor, when answering machine detection is enabled",
+     *      enum={"machine_start", "machine_end_beep", "machine_end_other", "human", "unknown"},
+     *      example="human",
+     * )
+     */
+    public string $amdAnsweredBy;
+
+    public bool $amdAsync;
+
+    public string $amdMethod;
+
+    public string $amdUrl;
+
     function __construct() {
         self::$instances++;
     }
