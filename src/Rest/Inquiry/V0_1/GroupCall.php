@@ -53,6 +53,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="Fully qualified URL which will provide the RestXML once the call connects",
+     *     example="https://example.com/answer/",
      * )
      */
     public string $AnswerUrl;
@@ -69,6 +70,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="Caller Name to be set for the call",
+     *     example="Group Test",
      * )
      */
     public string $CallerName;
@@ -76,6 +78,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="Remote URL to fetch with POST HTTP request which must return a RestXML with Play, Wait and/or Speak Elements only (all others are ignored). This RESTXML is played to the called party when he answered",
+     *     example="https://example.com/confirm_sound/",
      * )
      */
     public string $ConfirmSound;
@@ -83,6 +86,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="DTMF tone the called party must send to accept the call",
+     *     example="1",
      * )
      */
     public string $ConfirmKey;
@@ -90,6 +94,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call hangup notification will be POSTed. `HangupCause` is added to the usual call [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/hangup/",
      * )
      */
     public string $HangupUrl;
@@ -97,6 +102,7 @@ class GroupCall
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call ringing notification will be POSTed. `RequestUUID` and `CallUUID` is added to the usual [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/ring/",
      * )
      */
     public string $RingUrl;

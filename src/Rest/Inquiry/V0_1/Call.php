@@ -44,6 +44,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL which will provide the RestXML once the call connects",
+     *     example="https://example.com/answer/",
      * )
      */
     public string $AnswerUrl;
@@ -51,6 +52,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Caller Name to be set for the call",
+     *     example="Test",
      * )
      */
     public string $CallerName;
@@ -58,6 +60,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call hangup notification will be POSTed. `HangupCause` is added to the usual call [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/hangup/",
      * )
      */
     public string $HangupUrl;
@@ -65,6 +68,7 @@ class Call
     /**
      * @OA\Property(
      *     description="Fully qualified URL to which the call ringing notification will be POSTed. `RequestUUID` and `CallUUID` is added to the usual [call notification parameters](#/components/schemas/CallNotificationParameters)",
+     *     example="https://example.com/ring/",
      * )
      */
     public string $RingUrl;
@@ -177,14 +181,14 @@ class Call
 
     /**
      * @OA\Property(
-     *     description="Fully qualified URL to which the answering machine detection result will be sent. `AnsweredBy` and `MachineDetectionDuration` is added to the usual [call notification parameters](#/components/schemas/CallNotificationParameters) (an Eqivo extension)",
+     *     description="Fully qualified URL to which the answering machine detection result will be sent. `AnsweredBy` and `MachineDetectionDuration` are appended to the usual [call notification parameters](#/components/schemas/CallNotificationParameters) (an Eqivo extension)",
      * )
      */
     public string $AsyncAmdStatusCallback;
 
     /**
      * @OA\Property(
-     *     description="Amount of time (in seconds) allotted for answering machine detection (an Eqivo extension)",
+     *     description="Amount of time (in seconds) allotted for answering machine detection assessment (an Eqivo extension)",
      *     type="int",
      *     minimum=3,
      *     maximum=59,
