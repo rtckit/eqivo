@@ -31,11 +31,11 @@
         "ext-libxml": "*",
         "ext-pcre": "*",
         "ext-simplexml": "*",
-        "monolog/monolog": "^3.1",
+        "monolog/monolog": "^3.2",
         "nikic/fast-route": "^1.3",
-        "ramsey/uuid": "^4.3",
+        "ramsey/uuid": "^4.4",
         "react/event-loop": "^1.3",
-        "react/http": "^1.6",
+        "react/http": "^1.7",
         "react/promise": "^2.9",
         "rtckit/esl": "^0.8",
         "rtckit/react-esl": "^0.8",
@@ -46,9 +46,9 @@
     },
     "require-dev": {
         "clue/block-react": "^1.5",
-        "phpstan/phpstan": "^1.7",
+        "phpstan/phpstan": "^1.8",
         "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.23",
+        "vimeo/psalm": "^4.26",
         "zircote/swagger-php": "^4.4"
     },
     "suggest": {
