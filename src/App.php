@@ -51,7 +51,7 @@ class App
     /** @var array<string, ScheduledPlay> */
     protected array $scheduledPlays = [];
 
-    /** @var InfiniteIterator<string, Core> */
+    /** @var InfiniteIterator */
     protected InfiniteIterator $coreIterator;
 
     protected Logger $statsLogger;
