@@ -89,16 +89,15 @@ class Custom implements HandlerInterface
                 }
 
                 $session->amdMethod = $event->{"variable_{$this->app->config->appPrefix}_amd_method"} ?? Call::DEFAULT_AMD_METHOD;
-                $session->amdAsync = $event->{"variable_{$this->app->config->appPrefix}_amd_async"} === 'on';
+                $asyncVar = "variable_{$this->app->config->appPrefix}_amd_async";
+                $session->amdAsync = isset($event->{$asyncVar}) && ($event->{$asyncVar} === 'on');
 
-                if ($session->amdAsync) {
-                    $urlVar = "variable_{$this->app->config->appPrefix}_amd_url";
+                $urlVar = $session->amdAsync
+                    ? "variable_{$this->app->config->appPrefix}_amd_url"
+                    : "variable_{$this->app->config->appPrefix}_amd_target_url";
 
-                    if (isset($event->{$urlVar})) {
-                        $session->amdUrl = $event->{$urlVar};
-                    }
-                } else {
-                    $session->amdUrl = $event->{"variable_{$this->app->config->appPrefix}_amd_target_url"};
+                if (isset($event->{$urlVar})) {
+                    $session->amdUrl = $event->{$urlVar};
                 }
 
                 if ($isMachine && isset($event->{"variable_{$this->app->config->appPrefix}_amd_msg_end"})) {
@@ -162,14 +161,14 @@ class Custom implements HandlerInterface
                     'MachineDetectionDuration' => $session->amdDuration,
                 ];
 
-                if ($session->amdAsync) {
-                    /* Asynchronous, just fire the callback, if configured */
-                    if (isset($session->amdUrl)) {
+                if (isset($session->amdUrl)) {
+                    if ($session->amdAsync) {
+                        /* Asynchronous, just fire the callback */
                         $this->app->inboundServer->controller->fireSessionCallback($session, $session->amdUrl, $session->amdMethod, $params);
+                    } else {
+                        /* Synchronous? Kick off call flow execution */
+                        $this->app->outboundServer->controller->fetchAndExecuteRestXml($session, $session->amdUrl, $session->amdMethod, $params);
                     }
-                } else {
-                    /* Synchronous? Kick off call flow execution */
-                    $this->app->outboundServer->controller->fetchAndExecuteRestXml($session, $session->amdUrl, $session->amdMethod, $params);
                 }
 
                 return;
