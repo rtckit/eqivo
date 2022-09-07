@@ -197,7 +197,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
                 $config->restServerLogLevel = Level::fromName($input['restServerLogLevel']);
@@ -276,7 +275,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
                 $config->outboundServerLogLevel = Level::fromName($input['outboundServerLogLevel']);
@@ -289,7 +287,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
                 $config->inboundServerLogLevel = Level::fromName($input['inboundServerLogLevel']);

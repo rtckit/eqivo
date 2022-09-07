@@ -149,7 +149,6 @@ class LegacyConfigFile implements ResolverInterface
                 try {
                     /**
                      * Allow Monolog to deal with the verbosity level matching
-                     * @psalm-suppress ArgumentTypeCoercion
                      * @phpstan-ignore-next-line
                      */
                     $config->restServerLogLevel = $config->inboundServerLogLevel = Level::fromName($legacy['rest_server']['LOG_LEVEL']);
@@ -198,7 +197,6 @@ class LegacyConfigFile implements ResolverInterface
                 try {
                     /**
                      * Allow Monolog to deal with the verbosity level matching
-                     * @psalm-suppress ArgumentTypeCoercion
                      * @phpstan-ignore-next-line
                      */
                     $config->outboundServerLogLevel = Level::fromName($legacy['outbound_server']['LOG_LEVEL']);
