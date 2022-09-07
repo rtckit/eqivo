@@ -147,9 +147,6 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['rest_server']['LOG_LEVEL'])) {
                 try {
-                    /**
-                     * Allow Monolog to deal with the verbosity level matching
-                     */
                     $config->restServerLogLevel = $config->inboundServerLogLevel = Level::fromName($legacy['rest_server']['LOG_LEVEL']);
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (rest_server) line in legacy configuration file' . PHP_EOL);
@@ -194,9 +191,6 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['outbound_server']['LOG_LEVEL'])) {
                 try {
-                    /**
-                     * Allow Monolog to deal with the verbosity level matching
-                     */
                     $config->outboundServerLogLevel = Level::fromName($legacy['outbound_server']['LOG_LEVEL']);
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (outbound_server) line in legacy configuration file' . PHP_EOL);
