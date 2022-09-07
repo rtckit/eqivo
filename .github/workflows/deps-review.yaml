@@ -1,7 +1,6 @@
 name: 'Dependency Review'
 
 on:
-  push:
   pull_request:
 
 permissions:
