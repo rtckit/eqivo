@@ -197,7 +197,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @phpstan-ignore-next-line
                  */
                 $config->restServerLogLevel = Level::fromName($input['restServerLogLevel']);
             } catch (InvalidArgumentException $e) {
@@ -275,7 +274,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @phpstan-ignore-next-line
                  */
                 $config->outboundServerLogLevel = Level::fromName($input['outboundServerLogLevel']);
             } catch (InvalidArgumentException $e) {
@@ -287,7 +285,6 @@ class ConfigFile implements ResolverInterface
             try {
                 /**
                  * Allow Monolog to deal with the verbosity level matching
-                 * @phpstan-ignore-next-line
                  */
                 $config->inboundServerLogLevel = Level::fromName($input['inboundServerLogLevel']);
             } catch (InvalidArgumentException $e) {
