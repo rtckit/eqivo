@@ -32,10 +32,16 @@ jobs:
         with:
           php-version: ${{ matrix.php }}
           coverage: none
-          tools: phpmd
+          tools: composer
+
+      - name: Create PHPMD directory
+        file: path=/usr/share/php/phpmd state=directory
+
+      - name: Install PHPMD
+        shell: composer require phpmd/phpmd:@stable -d /usr/share/php/phpmd
 
       - name: Run PHPMD
-        run: phpmd . sarif codesize --reportfile phpmd-results.sarif
+        run: /usr/share/php/phpmd/vendor/bin/phpmd . sarif codesize --reportfile phpmd-results.sarif
         continue-on-error: true
 
       - name: Upload analysis results to GitHub
