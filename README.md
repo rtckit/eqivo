@@ -6,6 +6,8 @@
 
 [![CI Status](https://github.com/rtckit/eqivo/workflows/CI/badge.svg)](https://github.com/rtckit/eqivo/actions/workflows/ci.yaml)
 [![Publish Status](https://github.com/rtckit/eqivo/workflows/Publish/badge.svg)](https://github.com/rtckit/eqivo/actions/workflows/publish.yaml)
+[![Psalm Type Coverage](https://shepherd.dev/github/rtckit/eqivo/coverage.svg)](https://shepherd.dev/github/rtckit/eqivo)
+<br />
 [![Latest Stable Version](https://poser.pugx.org/rtckit/eqivo/v/stable.png)](https://packagist.org/packages/rtckit/eqivo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/rtckit/eqivo.svg)](https://hub.docker.com/r/rtckit/eqivo)
 [![Downloads on GitHub](https://img.shields.io/github/downloads/rtckit/eqivo/total?color=blue&label=Downloads%20on%20GitHub)](https://github.com/rtckit/eqivo/releases)
