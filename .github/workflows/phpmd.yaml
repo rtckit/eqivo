@@ -35,10 +35,10 @@ jobs:
           tools: composer
 
       - name: Create PHPMD directory
-        file: path=/usr/share/php/phpmd state=directory
+        run: mkdir -p /usr/share/php/phpmd
 
       - name: Install PHPMD
-        shell: composer require phpmd/phpmd:@stable -d /usr/share/php/phpmd
+        run: composer require phpmd/phpmd:@stable -d /usr/share/php/phpmd
 
       - name: Run PHPMD
         run: /usr/share/php/phpmd/vendor/bin/phpmd . sarif codesize --reportfile phpmd-results.sarif
