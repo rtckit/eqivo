@@ -48,7 +48,7 @@
         "clue/block-react": "^1.5",
         "phpstan/phpstan": "^1.8",
         "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.26",
+        "vimeo/psalm": "^5.1",
         "zircote/swagger-php": "^4.4"
     },
     "suggest": {
