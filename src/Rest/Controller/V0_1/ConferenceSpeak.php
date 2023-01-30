@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceSpeak as ConferenceSpeakInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceSpeak as ConferenceSpeakResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceSpeak as ConferenceSpeakView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceSpeak as ConferenceSpeakInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceSpeak as ConferenceSpeakResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceSpeak as ConferenceSpeakView;
 
 /**
  * @OA\Post(
@@ -48,53 +49,33 @@ use function React\Promise\{
 class ConferenceSpeak implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected ConferenceSpeakView $view;
 
     public function __construct()
     {
-        $this->view = new ConferenceSpeakView;
+        $this->view = new ConferenceSpeakView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceSpeakInquiry::factory($request);
-                $response = new ConferenceSpeakResponse;
+        $response = new ConferenceSpeakResponse();
+        $inquiry = ConferenceSpeakInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceSpeak with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function (?ESL\Response\ApiResponse $eslResponse = null) use ($response) {
-                        if (!isset($eslResponse) || !$eslResponse->isSuccessful()) {
-                            $response->Message = ConferenceSpeakResponse::MESSAGE_FAILED;
-                            $response->Success = false;
-                        } else {
-                            $response->Message = ConferenceSpeakResponse::MESSAGE_SUCCESS;
-                            $response->Success = true;
-                        }
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceSpeakInquiry $inquiry
-     * @param ConferenceSpeakResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceSpeakInquiry $inquiry, ConferenceSpeakResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceSpeakInquiry);
+        assert($response instanceof ConferenceSpeakResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceSpeakResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -116,7 +97,7 @@ class ConferenceSpeak implements ControllerInterface
             return;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceSpeakResponse::MESSAGE_NOT_FOUND;
@@ -126,26 +107,5 @@ class ConferenceSpeak implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceSpeakInquiry $inquiry
-     * @param ConferenceSpeakResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceSpeakInquiry $inquiry, ConferenceSpeakResponse $response): PromiseInterface
-    {
-        $cmd = "conference {$inquiry->ConferenceName} say";
-
-        if ($inquiry->MemberID === 'all') {
-            $cmd .= " '{$inquiry->Text}'";
-        } else {
-            $cmd .= "member {$inquiry->MemberID} '{$inquiry->Text}'";
-        }
-
-        return $inquiry->core->client->api((new ESL\Request\Api())->setParameters($cmd));
     }
 }

@@ -1,4 +1,4 @@
-FROM rtckit/slimswitch-builder:v1.10.7
+FROM rtckit/slimswitch-builder:v1.10.8
 
 # Build with:
 #

@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\FiCore\Command\Channel\Playback;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    CallLegEnum,
+    Channel,
     Core,
-    Session
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +19,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID", "Sounds"},
  * )
  */
-class Play
+class Play extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call to play media into",
@@ -82,15 +83,20 @@ class Play
     /** @var list<string> */
     public array $soundList;
 
-    public string $aLegFlags;
+    public Channel $channel;
 
-    public string $bLegFlags;
+    public function export(): Playback\Request
+    {
+        $request = new Playback\Request();
 
-    public string $playStringALeg;
+        $request->action = Playback\ActionEnum::Play;
+        $request->channel = $this->channel;
+        $request->leg = CallLegEnum::from($this->Legs);
+        $request->media = $this->soundList;
+        $request->loop = (bool)$this->Loop;
+        $request->mix = (bool)$this->Mix;
+        $request->duration = (int)$this->Length;
 
-    public string $playStringBLeg;
-
-    public Session $session;
-
-    public Core $core;
+        return $request;
+    }
 }

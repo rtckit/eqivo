@@ -3,25 +3,31 @@
 
 declare(strict_types=1);
 
-use RTCKit\Eqivo\{
-    App,
+use RTCKit\Eqivo as Eqivo;
+
+use RTCKit\FiCore\{
     Config,
     HttpClient,
     Inbound,
-    Outbound,
-    Rest
+    Plan,
+    Command,
+    Signal,
 };
+use RTCKit\FiCore\Switch\ESL;
 
 error_reporting(-1);
 set_time_limit(0);
 
 if (is_file(__DIR__ . '/../vendor/autoload.php')) {
-    require __DIR__ . '/../vendor/autoload.php';
+    $autoloadPath = __DIR__ . '/../vendor/autoload.php';
 } else if (is_file('./vendor/autoload.php')) {
-    require './vendor/autoload.php';
+    $autoloadPath = './vendor/autoload.php';
 } else {
     die('Cannot locate vendor/autoload.php file!' . PHP_EOL);
 }
+
+/** @psalm-suppress UnresolvableInclude */
+require_once($autoloadPath);
 
 if (!defined('PHP_VERSION_ID') || (PHP_VERSION_ID < 80100)) {
     die('Eqivo requires PHP 8.1+' . PHP_EOL);
@@ -33,84 +39,139 @@ foreach (['ctype', 'date', 'filter', 'json', 'libxml', 'pcre', 'simplexml'] as $
     }
 }
 
-$eqivo = new App;
+libxml_use_internal_errors(true);
 
-$eqivo->setConfig(new Config\Set);
+$eqivo = new Eqivo\App;
 
-$eqivo->addConfigResolver(new Config\CliArguments);
-$eqivo->addConfigResolver(new Config\LegacyConfigFile);
-$eqivo->addConfigResolver(new Config\ConfigFile);
-$eqivo->addConfigResolver(new Config\EnvironmentVars);
-$eqivo->resolveConfig();
+$eqivo
+    ->setConfig(new Eqivo\Config\Set)
+    ->addConfigResolver(new Eqivo\Config\CliArguments)
+    ->addConfigResolver(new Eqivo\Config\LegacyConfigFile)
+    ->addConfigResolver(new Eqivo\Config\ConfigFile)
+    ->addConfigResolver(new Eqivo\Config\EnvironmentVars)
+    ->resolveConfig();
 
-$eqivo->setHttpClient(new HttpClient);
+$eqivo->setHttpClient(new Eqivo\HttpClient);
 
-$eqivo->setInboundServer(
-    (new Inbound\Server)
+$eqivo
+    ->setEventConsumer(new ESL\Event\Consumer)
+    ->setPlanConsumer(
+        (new Eqivo\Plan\Consumer)
+            ->setApp($eqivo)
+            ->setElementHandler(Plan\CaptureSpeech\Element::class, new Plan\CaptureSpeech\Handler)
+            ->setElementHandler(Plan\CaptureTones\Element::class, new Plan\CaptureTones\Handler)
+            ->setElementHandler(Plan\Conference\Element::class, new Plan\Conference\Handler)
+            ->setElementHandler(Plan\Hangup\Element::class, new Plan\Hangup\Handler)
+            ->setElementHandler(Plan\Playback\Element::class, new Plan\Playback\Handler)
+            ->setElementHandler(Plan\Record\Element::class, new Plan\Record\Handler)
+            ->setElementHandler(Plan\Redirect\Element::class, new Plan\Redirect\Handler)
+            ->setElementHandler(Plan\Silence\Element::class, new Plan\Silence\Handler)
+            ->setElementHandler(Plan\Speak\Element::class, new Plan\Speak\Handler)
+            ->setElementHandler(Eqivo\Plan\Dial\Element::class, new Eqivo\Plan\Dial\Handler)
+            ->setElementHandler(Eqivo\Plan\PreAnswer\Element::class, new Eqivo\Plan\PreAnswer\Handler)
+            ->setElementHandler(Eqivo\Plan\SipTransfer\Element::class, new Eqivo\Plan\SipTransfer\Handler)
+    )
+    ->setPlanProducer(
+        (new Eqivo\Plan\Producer)
+            ->setApp($eqivo)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Conference)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Dial)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\GetDigits)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\GetSpeech)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Hangup)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Play)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\PreAnswer)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Record)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Redirect)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\SipTransfer)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Speak)
+            ->setRestXmlElementParser(new Eqivo\Plan\Parser\Wait)
+    );
+
+$eqivo->setSignalProducer(
+    (new Eqivo\Signal\Producer)
         ->setApp($eqivo)
-        ->setController(new Inbound\Controller)
-        ->setElementHandler(new Inbound\Handler\BackgroundJob)
-        ->setElementHandler(new Inbound\Handler\CallUpdate)
-        ->setElementHandler(new Inbound\Handler\ChannelHangupComplete)
-        ->setElementHandler(new Inbound\Handler\ChannelProgress)
-        ->setElementHandler(new Inbound\Handler\ChannelProgressMedia)
-        ->setElementHandler(new Inbound\Handler\ChannelState)
-        ->setElementHandler(new Inbound\Handler\Custom)
-        ->setElementHandler(new Inbound\Handler\RecordStop)
-        ->setElementHandler(new Inbound\Handler\SessionHeartbeat)
+        ->setSignalHandler(Signal\Channel\Hangup::class, new Eqivo\Signal\Handler\Channel\Hangup)
+        ->setSignalHandler(Signal\Channel\Heartbeat::class, new Eqivo\Signal\Handler\Channel\Heartbeat)
+        ->setSignalHandler(Signal\Channel\MachineDetection::class, new Eqivo\Signal\Handler\Channel\MachineDetection)
+        ->setSignalHandler(Signal\Channel\Progress::class, new Eqivo\Signal\Handler\Channel\Progress)
+        ->setSignalHandler(Signal\Channel\Recording::class, new Eqivo\Signal\Handler\Channel\Recording)
+        ->setSignalHandler(Signal\Channel\Speech::class, new Eqivo\Signal\Handler\Channel\Speech)
+        ->setSignalHandler(Signal\Conference\DTMF::class, new Eqivo\Signal\Handler\Conference\DTMF)
+        ->setSignalHandler(Signal\Conference\Enter::class, new Eqivo\Signal\Handler\Conference\Enter)
+        ->setSignalHandler(Signal\Conference\Floor::class, new Eqivo\Signal\Handler\Conference\Floor)
+        ->setSignalHandler(Signal\Conference\Leave::class, new Eqivo\Signal\Handler\Conference\Leave)
+        ->setSignalHandler(Signal\Conference\Recording::class, new Eqivo\Signal\Handler\Conference\Recording)
+        ->setSignalHandler(Eqivo\Signal\Channel\Bridge::class, new Eqivo\Signal\Handler\Channel\Bridge)
+        ->setSignalHandler(Eqivo\Signal\Channel\DTMF::class, new Eqivo\Signal\Handler\Channel\DTMF)
 );
 
-$eqivo->setOutboundServer(
-    (new Outbound\Server)
+$eqivo->setEslClient(
+    (new ESL\Client)
         ->setApp($eqivo)
-        ->setController(new Outbound\Controller)
-        ->setElementHandler(new Outbound\Conference\Handler)
-        ->setElementHandler(new Outbound\Dial\Handler)
-        ->setElementHandler(new Outbound\GetDigits\Handler)
-        ->setElementHandler(new Outbound\GetSpeech\Handler)
-        ->setElementHandler(new Outbound\Hangup\Handler)
-        ->setElementHandler(new Outbound\Play\Handler)
-        ->setElementHandler(new Outbound\PreAnswer\Handler)
-        ->setElementHandler(new Outbound\Record\Handler)
-        ->setElementHandler(new Outbound\Redirect\Handler)
-        ->setElementHandler(new Outbound\SipTransfer\Handler)
-        ->setElementHandler(new Outbound\Speak\Handler)
-        ->setElementHandler(new Outbound\Wait\Handler)
+        ->setEventHandler(new ESL\Event\BackgroundJob)
+        ->setEventHandler(new ESL\Event\ChannelHangupComplete)
+        ->setEventHandler(new ESL\Event\ChannelProgress)
+        ->setEventHandler(new ESL\Event\ChannelProgressMedia)
+        ->setEventHandler(new ESL\Event\ChannelState)
+        ->setEventHandler(new ESL\Event\Custom)
+        ->setEventHandler(new ESL\Event\RecordStop)
+        ->setEventHandler(new ESL\Event\SessionHeartbeat)
+        ->setEventHandler(new Eqivo\Switch\ESL\Event\CallUpdate)
+);
+
+$eqivo->setCommandConsumer(
+    (new Command\Consumer)
+        ->setApp($eqivo)
+        ->setMethodHandler(Command\Channel\DTMF\Request::class, new Command\Channel\DTMF\Handler)
+        ->setMethodHandler(Command\Channel\Hangup\Request::class, new Command\Channel\Hangup\Handler)
+        ->setMethodHandler(Command\Channel\Originate\Request::class, new Command\Channel\Originate\Handler)
+        ->setMethodHandler(Command\Channel\Playback\Request::class, new Command\Channel\Playback\Handler)
+        ->setMethodHandler(Command\Channel\Record\Request::class, new Command\Channel\Record\Handler)
+        ->setMethodHandler(Command\Channel\Redirect\Request::class, new Command\Channel\Redirect\Handler)
+        ->setMethodHandler(Command\Conference\Member\Request::class, new Command\Conference\Member\Handler)
+        ->setMethodHandler(Command\Conference\Playback\Request::class, new Command\Conference\Playback\Handler)
+        ->setMethodHandler(Command\Conference\Record\Request::class, new Command\Conference\Record\Handler)
+        ->setMethodHandler(Command\Conference\Speak\Request::class, new Command\Conference\Speak\Handler)
+        ->setMethodHandler(Eqivo\Command\Channel\SoundTouch\Request::class, new Eqivo\Command\Channel\SoundTouch\Handler)
+        ->setMethodHandler(Eqivo\Command\Conference\Query\Request::class, new Eqivo\Command\Conference\Query\Handler)
 );
 
 $eqivo->setRestServer(
-    (new Rest\Server)
+    (new Eqivo\Rest\Server)
         ->setApp($eqivo)
-        ->setRouteController('POST', '/v0.1/BulkCall/', new Rest\Controller\V0_1\BulkCall)
-        ->setRouteController('POST', '/v0.1/Call/', new Rest\Controller\V0_1\Call)
-        ->setRouteController('POST', '/v0.1/CancelScheduledHangup/', new Rest\Controller\V0_1\CancelScheduledHangup)
-        ->setRouteController('POST', '/v0.1/CancelScheduledPlay/', new Rest\Controller\V0_1\CancelScheduledPlay)
-        ->setRouteController('POST', '/v0.1/ConferenceDeaf/', new Rest\Controller\V0_1\ConferenceDeaf)
-        ->setRouteController('POST', '/v0.1/ConferenceHangup/', new Rest\Controller\V0_1\ConferenceHangup)
-        ->setRouteController('POST', '/v0.1/ConferenceKick/', new Rest\Controller\V0_1\ConferenceKick)
-        ->setRouteController('POST', '/v0.1/ConferenceList/', new Rest\Controller\V0_1\ConferenceList)
-        ->setRouteController('POST', '/v0.1/ConferenceListMembers/', new Rest\Controller\V0_1\ConferenceListMembers)
-        ->setRouteController('POST', '/v0.1/ConferenceMute/', new Rest\Controller\V0_1\ConferenceMute)
-        ->setRouteController('POST', '/v0.1/ConferencePlay/', new Rest\Controller\V0_1\ConferencePlay)
-        ->setRouteController('POST', '/v0.1/ConferenceRecordStart/', new Rest\Controller\V0_1\ConferenceRecordStart)
-        ->setRouteController('POST', '/v0.1/ConferenceRecordStop/', new Rest\Controller\V0_1\ConferenceRecordStop)
-        ->setRouteController('POST', '/v0.1/ConferenceSpeak/', new Rest\Controller\V0_1\ConferenceSpeak)
-        ->setRouteController('POST', '/v0.1/ConferenceUndeaf/', new Rest\Controller\V0_1\ConferenceUndeaf)
-        ->setRouteController('POST', '/v0.1/ConferenceUnmute/', new Rest\Controller\V0_1\ConferenceUnmute)
-        ->setRouteController('POST', '/v0.1/GroupCall/', new Rest\Controller\V0_1\GroupCall)
-        ->setRouteController('POST', '/v0.1/HangupAllCalls/', new Rest\Controller\V0_1\HangupAllCalls)
-        ->setRouteController('POST', '/v0.1/HangupCall/', new Rest\Controller\V0_1\HangupCall)
-        ->setRouteController('POST', '/v0.1/Play/', new Rest\Controller\V0_1\Play)
-        ->setRouteController('POST', '/v0.1/PlayStop/', new Rest\Controller\V0_1\PlayStop)
-        ->setRouteController('POST', '/v0.1/RecordStart/', new Rest\Controller\V0_1\RecordStart)
-        ->setRouteController('POST', '/v0.1/RecordStop/', new Rest\Controller\V0_1\RecordStop)
-        ->setRouteController('POST', '/v0.1/ScheduleHangup/', new Rest\Controller\V0_1\ScheduleHangup)
-        ->setRouteController('POST', '/v0.1/SchedulePlay/', new Rest\Controller\V0_1\SchedulePlay)
-        ->setRouteController('POST', '/v0.1/SendDigits/', new Rest\Controller\V0_1\SendDigits)
-        ->setRouteController('POST', '/v0.1/SoundTouch/', new Rest\Controller\V0_1\SoundTouch)
-        ->setRouteController('POST', '/v0.1/SoundTouchStop/', new Rest\Controller\V0_1\SoundTouchStop)
-        ->setRouteController('POST', '/v0.1/TransferCall/', new Rest\Controller\V0_1\TransferCall)
+        ->setRouteController('POST', '/v0.1/BulkCall/', new Eqivo\Rest\Controller\V0_1\BulkCall)
+        ->setRouteController('POST', '/v0.1/Call/', new Eqivo\Rest\Controller\V0_1\Call)
+        ->setRouteController('POST', '/v0.1/CancelScheduledHangup/', new Eqivo\Rest\Controller\V0_1\CancelScheduledHangup)
+        ->setRouteController('POST', '/v0.1/CancelScheduledPlay/', new Eqivo\Rest\Controller\V0_1\CancelScheduledPlay)
+        ->setRouteController('POST', '/v0.1/ConferenceDeaf/', new Eqivo\Rest\Controller\V0_1\ConferenceDeaf)
+        ->setRouteController('POST', '/v0.1/ConferenceHangup/', new Eqivo\Rest\Controller\V0_1\ConferenceHangup)
+        ->setRouteController('POST', '/v0.1/ConferenceKick/', new Eqivo\Rest\Controller\V0_1\ConferenceKick)
+        ->setRouteController('POST', '/v0.1/ConferenceList/', new Eqivo\Rest\Controller\V0_1\ConferenceList)
+        ->setRouteController('POST', '/v0.1/ConferenceListMembers/', new Eqivo\Rest\Controller\V0_1\ConferenceListMembers)
+        ->setRouteController('POST', '/v0.1/ConferenceMute/', new Eqivo\Rest\Controller\V0_1\ConferenceMute)
+        ->setRouteController('POST', '/v0.1/ConferencePlay/', new Eqivo\Rest\Controller\V0_1\ConferencePlay)
+        ->setRouteController('POST', '/v0.1/ConferenceRecordStart/', new Eqivo\Rest\Controller\V0_1\ConferenceRecordStart)
+        ->setRouteController('POST', '/v0.1/ConferenceRecordStop/', new Eqivo\Rest\Controller\V0_1\ConferenceRecordStop)
+        ->setRouteController('POST', '/v0.1/ConferenceSpeak/', new Eqivo\Rest\Controller\V0_1\ConferenceSpeak)
+        ->setRouteController('POST', '/v0.1/ConferenceUndeaf/', new Eqivo\Rest\Controller\V0_1\ConferenceUndeaf)
+        ->setRouteController('POST', '/v0.1/ConferenceUnmute/', new Eqivo\Rest\Controller\V0_1\ConferenceUnmute)
+        ->setRouteController('POST', '/v0.1/GroupCall/', new Eqivo\Rest\Controller\V0_1\GroupCall)
+        ->setRouteController('POST', '/v0.1/HangupAllCalls/', new Eqivo\Rest\Controller\V0_1\HangupAllCalls)
+        ->setRouteController('POST', '/v0.1/HangupCall/', new Eqivo\Rest\Controller\V0_1\HangupCall)
+        ->setRouteController('POST', '/v0.1/Play/', new Eqivo\Rest\Controller\V0_1\Play)
+        ->setRouteController('POST', '/v0.1/PlayStop/', new Eqivo\Rest\Controller\V0_1\PlayStop)
+        ->setRouteController('POST', '/v0.1/RecordStart/', new Eqivo\Rest\Controller\V0_1\RecordStart)
+        ->setRouteController('POST', '/v0.1/RecordStop/', new Eqivo\Rest\Controller\V0_1\RecordStop)
+        ->setRouteController('POST', '/v0.1/ScheduleHangup/', new Eqivo\Rest\Controller\V0_1\ScheduleHangup)
+        ->setRouteController('POST', '/v0.1/SchedulePlay/', new Eqivo\Rest\Controller\V0_1\SchedulePlay)
+        ->setRouteController('POST', '/v0.1/SendDigits/', new Eqivo\Rest\Controller\V0_1\SendDigits)
+        ->setRouteController('POST', '/v0.1/SoundTouch/', new Eqivo\Rest\Controller\V0_1\SoundTouch)
+        ->setRouteController('POST', '/v0.1/SoundTouchStop/', new Eqivo\Rest\Controller\V0_1\SoundTouchStop)
+        ->setRouteController('POST', '/v0.1/TransferCall/', new Eqivo\Rest\Controller\V0_1\TransferCall)
 );
+
+$eqivo->setEslServer(new ESL\Server);
 
 $eqivo->prepare();
 $eqivo->run();

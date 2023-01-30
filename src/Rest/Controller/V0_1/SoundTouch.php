@@ -4,22 +4,24 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\SoundTouch as SoundTouchInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\SoundTouch as SoundTouchResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\SoundTouch as SoundTouchView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\SoundTouch as SoundTouchInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\SoundTouch as SoundTouchResponse;
+use RTCKit\Eqivo\Rest\View\V0_1\SoundTouch as SoundTouchView;
+
+use RTCKit\FiCore\Switch\DirectionEnum;
 
 /**
  * @OA\Post(
@@ -48,55 +50,35 @@ use function React\Promise\{
 class SoundTouch implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
-    public const DEFAULT_AUDIO_DIRECTION = 'out';
+    public const DEFAULT_AUDIO_DIRECTION = DirectionEnum::Out;
 
     protected SoundTouchView $view;
 
     public function __construct()
     {
-        $this->view = new SoundTouchView;
+        $this->view = new SoundTouchView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = SoundTouchInquiry::factory($request);
-                $response = new SoundTouchResponse;
+        $response = new SoundTouchResponse();
+        $inquiry = SoundTouchInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI SoundTouch with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function (?ESL\Response\ApiResponse $eslResponse = null) use ($response) {
-                        if (!isset($eslResponse) || !$eslResponse->isSuccessful()) {
-                            $response->Message = SoundTouchResponse::MESSAGE_FAILED;
-                            $response->Success = false;
-                        } else {
-                            $response->Message = SoundTouchResponse::MESSAGE_SUCCESS;
-                            $response->Success = true;
-                        }
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param SoundTouchInquiry $inquiry
-     * @param SoundTouchResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(SoundTouchInquiry $inquiry, SoundTouchResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof SoundTouchInquiry);
+        assert($response instanceof SoundTouchResponse);
+
         if (!isset($inquiry->CallUUID)) {
             $response->Message = SoundTouchResponse::MESSAGE_NO_CALLUUID;
             $response->Success = false;
@@ -104,7 +86,7 @@ class SoundTouch implements ControllerInterface
             return;
         }
 
-        $inquiry->AudioDirection ??= static::DEFAULT_AUDIO_DIRECTION;
+        $inquiry->AudioDirection ??= static::DEFAULT_AUDIO_DIRECTION->value;
 
         if (!in_array($inquiry->AudioDirection, ['in', 'out'])) {
             $response->Message = SoundTouchResponse::MESSAGE_INVALID_AUDIO_DIRECTION;
@@ -203,60 +185,15 @@ class SoundTouch implements ControllerInterface
             }
         }
 
-        $session = $this->app->getSession($inquiry->CallUUID);
+        $channel = $this->app->getChannel($inquiry->CallUUID);
 
-        if (!isset($session)) {
+        if (!isset($channel)) {
             $response->Message = SoundTouchResponse::MESSAGE_NOT_FOUND;
             $response->Success = false;
 
             return;
         }
 
-        $inquiry->session = $session;
-        $inquiry->core = $session->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param SoundTouchInquiry $inquiry
-     * @param SoundTouchResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(SoundTouchInquiry $inquiry, SoundTouchResponse $response): PromiseInterface
-    {
-        return $inquiry->core->client->api(
-            (new ESL\Request\Api())->setParameters("soundtouch {$inquiry->CallUUID} stop")
-        )
-            ->then(function () use ($inquiry): PromiseInterface {
-                $cmd = "soundtouch {$inquiry->CallUUID} start";
-
-                if ($inquiry->AudioDirection === 'in') {
-                    $cmd .= ' send_leg';
-                }
-
-                if (isset($inquiry->PitchSemiTones)) {
-                    $cmd .= " {$inquiry->PitchSemiTones}s";
-                }
-
-                if (isset($inquiry->PitchOctaves)) {
-                    $cmd .= " {$inquiry->PitchOctaves}o";
-                }
-
-                if (isset($inquiry->Pitch)) {
-                    $cmd .= " {$inquiry->Pitch}p";
-                }
-
-                if (isset($inquiry->Rate)) {
-                    $cmd .= " {$inquiry->Rate}r";
-                }
-
-                if (isset($inquiry->Tempo)) {
-                    $cmd .= " {$inquiry->Tempo}t";
-                }
-
-                return $inquiry->core->client->api((new ESL\Request\Api())->setParameters($cmd));
-            });
+        $inquiry->channel = $channel;
     }
 }

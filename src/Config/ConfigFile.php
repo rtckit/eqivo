@@ -4,17 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Config;
 
-use RTCKit\Eqivo\Exception\EqivoException;
-
-use Monolog\Level;
-use Symfony\Component\Yaml\Yaml;
-use Closure;
 use InvalidArgumentException;
+use Monolog\Level;
+
+use RTCKit\FiCore\Config\{
+    AbstractSet,
+    Core,
+    ResolverInterface,
+};
+use RTCKit\FiCore\Exception\FiCoreException;
+use Symfony\Component\Yaml\Yaml;
 
 class ConfigFile implements ResolverInterface
 {
-    public function resolve(Set $config): void
+    public function resolve(AbstractSet $config): void
     {
+        assert($config instanceof Set);
+
         if (!isset($config->configFile)) {
             return;
         }
@@ -43,14 +49,14 @@ class ConfigFile implements ResolverInterface
                     break;
 
                 default:
-                    throw new EqivoException('Unknown file format');
+                    throw new FiCoreException('Unknown file format');
             }
         } catch (\Throwable $t) {
             fwrite(STDERR, 'Cannot parse configuration file: ' . $t->getMessage() . PHP_EOL);
             return;
         }
 
-        if (!is_array($input)) {
+        if (!isset($input) || !is_array($input)) {
             fwrite(STDERR, 'Cannot parse configuration file: expecting an associative array' . PHP_EOL);
             return;
         }
@@ -90,7 +96,7 @@ class ConfigFile implements ResolverInterface
                     continue;
                 }
 
-                $core = new Core;
+                $core = new Core();
 
                 if (isset($coreConfig['eslUser']) && is_string($coreConfig['eslUser'])) {
                     $core->eslUser = $coreConfig['eslUser'];
@@ -113,6 +119,7 @@ class ConfigFile implements ResolverInterface
                 fwrite(STDERR, 'Malformed `defaultAnswerUrl` parameter in configuration file' . PHP_EOL);
             } else {
                 $config->defaultAnswerUrl = $input['defaultAnswerUrl'];
+                $config->defaultAnswerSequence = "{$config->defaultHttpMethod}:{$config->defaultAnswerUrl}";
             }
         }
 
@@ -120,7 +127,7 @@ class ConfigFile implements ResolverInterface
             if (!filter_var($input['defaultHangupUrl'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed `defaultHangupUrl` parameter in configuration file' . PHP_EOL);
             } else {
-                $config->defaultHangupUrl = $input['defaultHangupUrl'];
+                $config->defaultHangupSequence = "{$config->defaultHttpMethod}:{$input['defaultHangupUrl']}";
             }
         }
 
@@ -205,7 +212,7 @@ class ConfigFile implements ResolverInterface
             if (is_array($input['restAllowedIps'])) {
                 $errs = $config->setRestAllowedIps($input['restAllowedIps']);
 
-                foreach($errs as $err) {
+                foreach ($errs as $err) {
                     fwrite(STDERR, 'Malformed `restAllowedIps` parameter in configuration file: ' . $err . PHP_EOL);
                 }
             } else {
@@ -225,61 +232,61 @@ class ConfigFile implements ResolverInterface
             if (!filter_var($input['recordUrl'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed `recordUrl` parameter in configuration file' . PHP_EOL);
             } else {
-                $config->recordUrl = $input['recordUrl'];
+                $config->recordingAttn = "{$config->defaultHttpMethod}:{$input['recordUrl']}";
             }
         }
 
-        if (isset($input['outboundServerBindIp']) && is_string($input['outboundServerBindIp'])) {
-            if (filter_var($input['outboundServerBindIp'], FILTER_VALIDATE_IP)) {
-                $config->outboundServerBindIp = $input['outboundServerBindIp'];
+        if (isset($input['eslServerBindIp']) && is_string($input['eslServerBindIp'])) {
+            if (filter_var($input['eslServerBindIp'], FILTER_VALIDATE_IP)) {
+                $config->eslServerBindIp = $input['eslServerBindIp'];
             } else {
-                fwrite(STDERR, 'Malformed `outboundServerBindIp` parameter in configuration file: valid IP address required' . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslServerBindIp` parameter in configuration file: valid IP address required' . PHP_EOL);
             }
         }
 
-        if (isset($input['outboundServerBindPort']) && is_scalar($input['outboundServerBindPort'])) {
-            $port = (int)$input['outboundServerBindPort'];
+        if (isset($input['eslServerBindPort']) && is_scalar($input['eslServerBindPort'])) {
+            $port = (int)$input['eslServerBindPort'];
 
             if (!$port || ($port > 65535)) {
-                fwrite(STDERR, 'Malformed `outboundServerBindPort` parameter in configuration file: valid port number required' . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslServerBindPort` parameter in configuration file: valid port number required' . PHP_EOL);
             } else {
-                $config->outboundServerBindPort = $port;
+                $config->eslServerBindPort = $port;
             }
         }
 
-        if (isset($input['outboundServerAdvertisedIp']) && is_string($input['outboundServerAdvertisedIp'])) {
-            if (filter_var($input['outboundServerAdvertisedIp'], FILTER_VALIDATE_IP)) {
-                $config->outboundServerAdvertisedIp = $input['outboundServerAdvertisedIp'];
-            } else if ($input['outboundServerAdvertisedIp'] === Set::INBOUND_SOCKET_ADDRESS) {
-                $config->outboundServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
+        if (isset($input['eslServerAdvertisedIp']) && is_string($input['eslServerAdvertisedIp'])) {
+            if (filter_var($input['eslServerAdvertisedIp'], FILTER_VALIDATE_IP)) {
+                $config->eslServerAdvertisedIp = $input['eslServerAdvertisedIp'];
+            } elseif ($input['eslServerAdvertisedIp'] === Set::INBOUND_SOCKET_ADDRESS) {
+                $config->eslServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
             } else {
-                fwrite(STDERR, 'Malformed `outboundServerAdvertisedIp` parameter in configuration file: valid IP address or `' . Set::INBOUND_SOCKET_ADDRESS . '` required' . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslServerAdvertisedIp` parameter in configuration file: valid IP address or `' . Set::INBOUND_SOCKET_ADDRESS . '` required' . PHP_EOL);
             }
         }
 
-        if (isset($input['outboundServerAdvertisedPort']) && is_scalar($input['outboundServerAdvertisedPort'])) {
-            $port = (int)$input['outboundServerAdvertisedPort'];
+        if (isset($input['eslServerAdvertisedPort']) && is_scalar($input['eslServerAdvertisedPort'])) {
+            $port = (int)$input['eslServerAdvertisedPort'];
 
             if (!$port || ($port > 65535)) {
-                fwrite(STDERR, 'Malformed `outboundServerAdvertisedPort` parameter in configuration file: valid port number required' . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslServerAdvertisedPort` parameter in configuration file: valid port number required' . PHP_EOL);
             } else {
-                $config->outboundServerAdvertisedPort = $port;
+                $config->eslServerAdvertisedPort = $port;
             }
         }
 
-        if (isset($input['outboundServerLogLevel'])) {
+        if (isset($input['eslServerLogLevel'])) {
             try {
-                $config->outboundServerLogLevel = Level::fromName($input['outboundServerLogLevel']);
+                $config->eslServerLogLevel = Level::fromName($input['eslServerLogLevel']);
             } catch (InvalidArgumentException $e) {
-                fwrite(STDERR, 'Malformed `outboundServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
         }
 
-        if (isset($input['inboundServerLogLevel'])) {
+        if (isset($input['eslClientLogLevel'])) {
             try {
-                $config->inboundServerLogLevel = Level::fromName($input['inboundServerLogLevel']);
+                $config->eslClientLogLevel = Level::fromName($input['inboundServerLogLevel']);
             } catch (InvalidArgumentException $e) {
-                fwrite(STDERR, 'Malformed `inboundServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
+                fwrite(STDERR, 'Malformed `eslClientLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
         }
 
@@ -287,7 +294,7 @@ class ConfigFile implements ResolverInterface
             if (!filter_var($input['callHeartbeatUrl'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed `callHeartbeatUrl` parameter in configuration file' . PHP_EOL);
             } else {
-                $config->callHeartbeatUrl = $input['callHeartbeatUrl'];
+                $config->heartbeatAttn = "{$config->defaultHttpMethod}:{$input['callHeartbeatUrl']}";
             }
         }
     }

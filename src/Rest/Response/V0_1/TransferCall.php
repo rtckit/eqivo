@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Redirect;
+use RTCKit\FiCore\Command\ResponseInterface;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="TransferCallResponse",
  *      required={"Message", "Success"},
  * )
  */
-class TransferCall
+class TransferCall extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Transfer Call Executed';
 
@@ -49,4 +54,14 @@ class TransferCall
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Redirect\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        return $this;
+    }
 }

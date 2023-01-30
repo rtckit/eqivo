@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceMute as ConferenceMuteInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceMute as ConferenceMuteResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceMute as ConferenceMuteView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceMute as ConferenceMuteInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceMute as ConferenceMuteResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceMute as ConferenceMuteView;
 
 /**
  * @OA\Post(
@@ -48,48 +49,33 @@ use function React\Promise\{
 class ConferenceMute implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected ConferenceMuteView $view;
 
     public function __construct()
     {
-        $this->view = new ConferenceMuteView;
+        $this->view = new ConferenceMuteView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceMuteInquiry::factory($request);
-                $response = new ConferenceMuteResponse;
+        $response = new ConferenceMuteResponse();
+        $inquiry = ConferenceMuteInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceMute with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        $response->Message = ConferenceMuteResponse::MESSAGE_SUCCESS;
-                        $response->Success = true;
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceMuteInquiry $inquiry
-     * @param ConferenceMuteResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceMuteInquiry $inquiry, ConferenceMuteResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceMuteInquiry);
+        assert($response instanceof ConferenceMuteResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceMuteResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -104,7 +90,7 @@ class ConferenceMute implements ControllerInterface
             return;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceMuteResponse::MESSAGE_NOT_FOUND;
@@ -114,37 +100,5 @@ class ConferenceMute implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceMuteInquiry $inquiry
-     * @param ConferenceMuteResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceMuteInquiry $inquiry, ConferenceMuteResponse $response): PromiseInterface
-    {
-        $members = explode(',', $inquiry->MemberID);
-        $promises = [];
-
-        foreach ($members as $member) {
-            $promises[] = $inquiry->core->client->api(
-                (new ESL\Request\Api())->setParameters("conference {$inquiry->ConferenceName} mute {$member}")
-            )
-                ->then (function (ESL\Response\ApiResponse $eslResponse) use ($member, $response): PromiseInterface {
-                    if (!$eslResponse->isSuccessful()) {
-                        $this->app->restServer->logger->warning('Conference Mute Failed for ' . $member);
-                    } else {
-                        $this->app->restServer->logger->debug('Conference Mute Done for ' . $member);
-                        $response->Members[] = $member;
-                    }
-
-                    return resolve();
-                });
-        }
-
-        return all($promises);
     }
 }

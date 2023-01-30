@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\FiCore\Command\Channel\Hangup;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Channel,
     Core,
-    Session
+    HangupCauseEnum,
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID", "Time"},
  * )
  */
-class ScheduleHangup
+class ScheduleHangup extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call",
@@ -38,7 +38,17 @@ class ScheduleHangup
      */
     public string|int $Time;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): Hangup\Request
+    {
+        $request = new Hangup\Request();
+
+        $request->action = Hangup\ActionEnum::Schedule;
+        $request->cause = HangupCauseEnum::ALLOTTED_TIMEOUT;
+        $request->channel = $this->channel;
+        $request->delay = (int)$this->Time;
+
+        return $request;
+    }
 }

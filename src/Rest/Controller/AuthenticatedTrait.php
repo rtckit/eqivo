@@ -4,18 +4,21 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller;
 
-use RTCKit\Eqivo\{
-    App,
-    Config
-};
-use RTCKit\Eqivo\Exception\AuthException;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
 use function React\Promise\{
-    resolve,
-    reject
+    reject,
+    resolve
 };
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\App;
+use RTCKit\Eqivo\Exception\AuthException;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
+use RTCKit\Eqivo\Rest\View\Error as ErrorView;
+use Throwable;
 
 /**
  * @OA\SecurityScheme(
@@ -35,25 +38,45 @@ trait AuthenticatedTrait
         return $this;
     }
 
-    public function validateCredentials(string $id, string $token): PromiseInterface
+    protected function doExecute(ServerRequestInterface $request, AbstractResponse $response, AbstractInquiry $inquiry): PromiseInterface
     {
-        if (($id === $this->app->config->restAuthId) && ($token === $this->app->config->restAuthToken)) {
-            return resolve();
-        } else {
-            return reject(new AuthException('Invalid credentials'));
-        }
+        return $this->authenticate($request)
+            ->then(function () use ($inquiry, $response): PromiseInterface {
+                $this->app->restServer->logger->debug($inquiry::class, (array)$inquiry);
+                $this->validate($inquiry, $response);
+
+                if (isset($response->Success) && !$response->Success) {
+                    return resolve($this->view->execute($response));
+                }
+
+                return $this->app->commandConsumer->consume($inquiry->export())
+                    ->then(function (ResponseInterface $commandResponse) use ($response) {
+                        $response->import($commandResponse);
+
+                        if (property_exists($response, 'RestApiServer')) {
+                            /** @psalm-suppress UndefinedPropertyAssignment */
+                            $response->RestApiServer = $this->app->restServer->config->restServerAdvertisedHost;
+                        }
+
+                        return $this->view->execute($response);
+                    });
+            })
+            ->otherwise($this->exceptionHandler(...));
     }
 
-    public function validateIpAddress(string $ip): PromiseInterface
+    /**
+     * Validates API call parameters
+     *
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
+     */
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
-        if (!$this->app->restServer->ipSet->match($ip)) {
-            return reject(new AuthException('IP Auth Failed'));
-        }
-
-        return resolve();
+        assert($inquiry instanceof AbstractInquiry);
+        assert($response instanceof AbstractResponse);
     }
 
-    public function authenticate(ServerRequestInterface $request): PromiseInterface
+    protected function authenticate(ServerRequestInterface $request): PromiseInterface
     {
         return $this->validateIpAddress($request->getServerParams()['REMOTE_ADDR'])
             ->then(function () use ($request): PromiseInterface {
@@ -87,5 +110,48 @@ trait AuthenticatedTrait
 
                 return $this->validateCredentials($parts[0], $parts[1]);
             });
+    }
+
+    protected function validateCredentials(string $id, string $token): PromiseInterface
+    {
+        if (
+            ($id === $this->app->restServer->config->restAuthId) &&
+            ($token === $this->app->restServer->config->restAuthToken)
+        ) {
+            return resolve();
+        } else {
+            return reject(new AuthException('Invalid credentials'));
+        }
+    }
+
+    protected function validateIpAddress(string $ip): PromiseInterface
+    {
+        if (!$this->app->restServer->ipSet->match($ip)) {
+            return reject(new AuthException('IP Auth Failed'));
+        }
+
+        return resolve();
+    }
+
+    protected function exceptionHandler(Throwable $t): PromiseInterface
+    {
+        $t = $t->getPrevious() ?: $t;
+        $this->app->restServer->logger->error('REST controller exception: ' . $t->getMessage(), [
+            'file' => $t->getFile(),
+            'line' => $t->getLine(),
+        ]);
+
+        $response = new ErrorResponse();
+        $code = (int)$t->getCode();
+
+        if ($code && isset(ErrorResponse::DEFAULT_BODY[$code])) {
+            $response->code = $code;
+            $response->body = ErrorResponse::DEFAULT_BODY[$response->code];
+        } else {
+            $response->code = 500;
+            $response->body = ErrorResponse::DEFAULT_BODY[0];
+        }
+
+        return resolve((new ErrorView())->execute($response));
     }
 }

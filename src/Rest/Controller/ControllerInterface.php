@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller;
 
-use RTCKit\Eqivo\App;
+use Psr\Http\Message\ServerRequestInterface;
 
 use React\Promise\PromiseInterface;
-use Psr\Http\Message\ServerRequestInterface;
+use RTCKit\Eqivo\App;
 
 interface ControllerInterface
 {

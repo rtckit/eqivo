@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\TransferCall as TransferCallInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\TransferCall as TransferCallResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\TransferCall as TransferCallView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\TransferCall as TransferCallInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\TransferCall as TransferCallResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\TransferCall as TransferCallView;
 
 /**
  * @OA\Post(
@@ -48,62 +49,33 @@ use function React\Promise\{
 class TransferCall implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected TransferCallView $view;
 
     public function __construct()
     {
-        $this->view = new TransferCallView;
+        $this->view = new TransferCallView();
     }
 
-    /**
-     * API call entrypoint
-     *
-     * @param ServerRequestInterface $request
-     *
-     * @return PromiseInterface
-     */
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = TransferCallInquiry::factory($request);
-                $response = new TransferCallResponse;
+        $response = new TransferCallResponse();
+        $inquiry = TransferCallInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI TransferCall with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function (?ESL\Response\ApiResponse $eslResponse = null) use ($response, $inquiry) {
-                        if (!isset($eslResponse) || !$eslResponse->isSuccessful()) {
-                            $response->Message = TransferCallResponse::MESSAGE_FAILED;
-                            $response->Success = false;
-
-                            unset($inquiry->session->transferInProgress);
-                        } else {
-                            $response->Message = TransferCallResponse::MESSAGE_SUCCESS;
-                            $response->Success = true;
-                        }
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
-     * Validates API call inquiry
+     * Validates API call parameters
      *
-     * @param TransferCallInquiry $inquiry
-     * @param TransferCallResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(TransferCallInquiry $inquiry, TransferCallResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof TransferCallInquiry);
+        assert($response instanceof TransferCallResponse);
+
         if (!isset($inquiry->CallUUID)) {
             $response->Message = TransferCallResponse::MESSAGE_NO_CALLUUID;
             $response->Success = false;
@@ -125,62 +97,16 @@ class TransferCall implements ControllerInterface
             return;
         }
 
-        $session = $this->app->getSession($inquiry->CallUUID);
+        $channel = $this->app->getChannel($inquiry->CallUUID);
 
-        if (!isset($session)) {
+        if (!isset($channel)) {
             $response->Message = TransferCallResponse::MESSAGE_NOT_FOUND;
             $response->Success = false;
 
             return;
         }
 
-        $inquiry->session = $session;
-        $inquiry->core = $session->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param TransferCallInquiry $inquiry
-     * @param TransferCallResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(TransferCallInquiry $inquiry, TransferCallResponse $response): PromiseInterface
-    {
-        return all([
-            'transfer_progress' => $inquiry->core->client->api(
-                (new ESL\Request\Api)->setParameters("uuid_setvar {$inquiry->CallUUID} {$this->app->config->appPrefix}_transfer_progress true")
-            ),
-            'transfer_url' => $inquiry->core->client->api(
-                (new ESL\Request\Api)->setParameters("uuid_setvar {$inquiry->CallUUID} {$this->app->config->appPrefix}_transfer_url " . $inquiry->Url)
-            ),
-            $this->app->config->appPrefix . '_destination_number' => $inquiry->core->client->api(
-                (new ESL\Request\Api)->setParameters("uuid_getvar {$inquiry->CallUUID} {$this->app->config->appPrefix}_destination_number")
-            ),
-            'destination_number' => $inquiry->core->client->api(
-                (new ESL\Request\Api)->setParameters("uuid_getvar {$inquiry->CallUUID} destination_number")
-            ),
-        ])
-            ->then(function (array $args) use ($inquiry): PromiseInterface {
-                $destNumber = $args[$this->app->config->appPrefix . '_destination_number']->getBody();
-
-                if (($destNumber === '_undef_') || (strpos($destNumber, '-ERR') === 0)) {
-                    $destNumber = $args['destination_number']->getBody();
-
-                    return $inquiry->core->client->api(
-                        (new ESL\Request\Api)->setParameters("uuid_setvar {$inquiry->CallUUID} {$this->app->config->appPrefix}_destination_number " . $destNumber)
-                    );
-                }
-
-                return resolve();
-            })
-            ->then(function () use ($inquiry): PromiseInterface {
-                $inquiry->session->transferInProgress = true;
-
-                return $inquiry->core->client->api(
-                    (new ESL\Request\Api)->setParameters("uuid_transfer {$inquiry->CallUUID} 'sleep:5000' inline")
-                );
-            });
+        $inquiry->channel = $channel;
+        $inquiry->defaultHttpMethod = $this->app->restServer->config->defaultHttpMethod;
     }
 }

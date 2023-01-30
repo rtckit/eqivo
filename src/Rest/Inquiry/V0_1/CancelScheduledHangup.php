@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\FiCore\Command\Channel\Hangup;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
     Core,
-    ScheduledHangup
+    ScheduledHangup,
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +17,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"SchedHangupId"},
  * )
  */
-class CancelScheduledHangup
+class CancelScheduledHangup extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier returned when scheduled hangup was originally requested",
@@ -30,5 +29,13 @@ class CancelScheduledHangup
 
     public ScheduledHangup $hup;
 
-    public Core $core;
+    public function export(): Hangup\Request
+    {
+        $request = new Hangup\Request();
+
+        $request->action = Hangup\ActionEnum::Cancel;
+        $request->schedHangup = $this->hup;
+
+        return $request;
+    }
 }

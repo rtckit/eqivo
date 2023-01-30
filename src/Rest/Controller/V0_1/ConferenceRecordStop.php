@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceRecordStop as ConferenceRecordStopInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceRecordStop as ConferenceRecordStopResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceRecordStop as ConferenceRecordStopView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceRecordStop as ConferenceRecordStopInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceRecordStop as ConferenceRecordStopResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceRecordStop as ConferenceRecordStopView;
 
 /**
  * @OA\Post(
@@ -48,45 +49,33 @@ use function React\Promise\{
 class ConferenceRecordStop implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected ConferenceRecordStopView $view;
 
     public function __construct()
     {
-        $this->view = new ConferenceRecordStopView;
+        $this->view = new ConferenceRecordStopView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceRecordStopInquiry::factory($request);
-                $response = new ConferenceRecordStopResponse;
+        $response = new ConferenceRecordStopResponse();
+        $inquiry = ConferenceRecordStopInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceRecordStop with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceRecordStopInquiry $inquiry
-     * @param ConferenceRecordStopResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceRecordStopInquiry $inquiry, ConferenceRecordStopResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceRecordStopInquiry);
+        assert($response instanceof ConferenceRecordStopResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceRecordStopResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -101,7 +90,7 @@ class ConferenceRecordStop implements ControllerInterface
             return;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceRecordStopResponse::MESSAGE_NOT_FOUND;
@@ -111,36 +100,5 @@ class ConferenceRecordStop implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceRecordStopInquiry $inquiry
-     * @param ConferenceRecordStopResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceRecordStopInquiry $inquiry, ConferenceRecordStopResponse $response): PromiseInterface
-    {
-        return $inquiry->core->client->api(
-                (new ESL\Request\Api())->setParameters("conference {$inquiry->ConferenceName} norecord {$inquiry->RecordFile}")
-            )
-            ->then (function (ESL\Response\ApiResponse $eslResponse) use ($response): PromiseInterface {
-                $body = $eslResponse->getBody();
-
-                /* Cannot use Response::isSuccessful() here as the response is non-standard, e.g.
-                 * "Stopped recording file /tmp/test.wav\n+OK Stopped recording 0 files\n"
-                 */
-                if (is_null($body) || strpos($body, '+OK Stopped recording') === false) {
-                    $response->Message = ConferenceRecordStopResponse::MESSAGE_FAILED;
-                    $response->Success = false;
-                } else {
-                    $response->Message = ConferenceRecordStopResponse::MESSAGE_SUCCESS;
-                    $response->Success = true;
-                }
-
-                return resolve();
-            });
     }
 }

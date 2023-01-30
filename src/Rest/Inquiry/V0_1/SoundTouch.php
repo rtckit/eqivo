@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\Eqivo\Command\Channel\SoundTouch as SoundTouchCommand;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\{
+    Channel,
     Core,
-    Session
+    DirectionEnum,
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +19,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID"},
  * )
  */
-class SoundTouch
+class SoundTouch extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call to send DTMF to",
@@ -96,7 +97,36 @@ class SoundTouch
      */
     public string|float $Tempo;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): SoundTouchCommand\Request
+    {
+        $request = new SoundTouchCommand\Request();
+
+        $request->action = SoundTouchCommand\ActionEnum::Start;
+        $request->channel = $this->channel;
+        $request->direction = DirectionEnum::from($this->AudioDirection);
+
+        if (isset($this->PitchSemiTones)) {
+            $request->pitchSemiTones = (float)$this->PitchSemiTones;
+        }
+
+        if (isset($this->PitchOctaves)) {
+            $request->pitchOctaves = (float)$this->PitchOctaves;
+        }
+
+        if (isset($this->Pitch)) {
+            $request->pitch = (float)$this->Pitch;
+        }
+
+        if (isset($this->Rate)) {
+            $request->rate = (float)$this->Rate;
+        }
+
+        if (isset($this->Tempo)) {
+            $request->tempo = (float)$this->Tempo;
+        }
+
+        return $request;
+    }
 }

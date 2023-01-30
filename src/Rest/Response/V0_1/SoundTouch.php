@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Command\Channel\SoundTouch as SoundTouchCommand;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="SoundTouchResponse",
  *      required={"Message", "Success"},
  * )
  */
-class SoundTouch
+class SoundTouch extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'SoundTouch Executed';
 
@@ -76,4 +81,14 @@ class SoundTouch
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof SoundTouchCommand\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        return $this;
+    }
 }

@@ -2,7 +2,7 @@
 /**
  * RTCKit\Eqivo\Exception\RestXmlSyntaxException Class
  */
-declare(strict_types = 1);
+declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Exception;
 

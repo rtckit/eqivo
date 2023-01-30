@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\FiCore\Command\Channel\Playback;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\{
     Core,
     ScheduledPlay
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"SchedPlayId"},
  * )
  */
-class CancelScheduledPlay
+class CancelScheduledPlay extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier returned when scheduled playback was originally requested",
@@ -30,5 +30,13 @@ class CancelScheduledPlay
 
     public ScheduledPlay $play;
 
-    public Core $core;
+    public function export(): Playback\Request
+    {
+        $request = new Playback\Request();
+
+        $request->action = Playback\ActionEnum::Cancel;
+        $request->schedPlay = $this->play;
+
+        return $request;
+    }
 }

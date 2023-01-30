@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Command\Conference\Query;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="ConferenceListResponse",
  *      required={"Message", "Success", "List"},
  * )
  */
-class ConferenceList
+class ConferenceList extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Conference List Executed';
+
+    public const MESSAGE_FAILED = 'Conference List Failed';
 
     public const MESSAGE_PARSE_ERROR = 'Conference List Failed to parse result';
 
@@ -83,4 +90,15 @@ class ConferenceList
      * )
      */
     public array $List = [];
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Query\Response);
+
+        $this->Success = true;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+        $this->List = $response->rooms;
+
+        return $this;
+    }
 }

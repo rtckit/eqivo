@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Conference\Playback;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\Core;
 
 /**
  * @OA\Schema(
@@ -13,10 +15,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"ConferenceName", "FilePath", "MemberID"},
  * )
  */
-class ConferencePlay
+class ConferencePlay extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Name of the conference in question",
@@ -42,4 +42,19 @@ class ConferencePlay
     public string $MemberID;
 
     public Core $core;
+
+    public function export(): Playback\Request
+    {
+        $conference = $this->core->getConferenceByRoom($this->ConferenceName);
+        $request = new Playback\Request();
+        $request->action = Playback\ActionEnum::Play;
+        $request->medium = $this->FilePath;
+        $request->member = $this->MemberID;
+
+        if (isset($conference)) {
+            $request->conference = $conference;
+        }
+
+        return $request;
+    }
 }
