@@ -6,9 +6,6 @@ declare(strict_types=1);
 use RTCKit\Eqivo as Eqivo;
 
 use RTCKit\FiCore\{
-    Config,
-    HttpClient,
-    Inbound,
     Plan,
     Command,
     Signal,

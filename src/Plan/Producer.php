@@ -196,7 +196,7 @@ class Producer extends AbstractProducer
             ->otherwise(function (\Throwable $t) {
                 $t = $t->getPrevious() ?: $t;
 
-                $this->logger->error('Processing call failure: ' . $t->getMessage(), [
+                $this->logger->error('Processing RESTXML failure: ' . $t->getMessage(), [
                     'file' => $t->getFile(),
                     'line' => $t->getLine(),
                 ]);

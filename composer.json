@@ -39,7 +39,7 @@
         "react/http": "^1.7",
         "react/promise": "^2.9",
         "rtckit/esl": "^0.8",
-        "rtckit/ficore": "0.0.1",
+        "rtckit/ficore": "v0.0.2.x-dev",
         "rtckit/sip": "^0.7",
         "symfony/yaml": "^6.1",
         "wikimedia/ip-set": "^3.1"
