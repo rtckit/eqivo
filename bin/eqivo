@@ -88,6 +88,7 @@ $eqivo
 $eqivo->setSignalProducer(
     (new Eqivo\Signal\Producer)
         ->setApp($eqivo)
+        ->setSignalHandler(Signal\Channel\DTMF::class, new Eqivo\Signal\Handler\Channel\DTMF)
         ->setSignalHandler(Signal\Channel\Hangup::class, new Eqivo\Signal\Handler\Channel\Hangup)
         ->setSignalHandler(Signal\Channel\Heartbeat::class, new Eqivo\Signal\Handler\Channel\Heartbeat)
         ->setSignalHandler(Signal\Channel\MachineDetection::class, new Eqivo\Signal\Handler\Channel\MachineDetection)

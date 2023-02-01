@@ -21,7 +21,7 @@ class HangupAllCalls extends AbstractInquiry
         $request = new Hangup\Request();
 
         $request->action = Hangup\ActionEnum::All;
-        $request->cause = HangupCauseEnum::MANAGER_REQUEST;
+        $request->cause = HangupCauseEnum::NORMAL_CLEARING;
 
         return $request;
     }

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace RTCKit\Eqivo\Signal\Handler\Channel;
 
 use RTCKit\Eqivo\Signal\Channel\DTMF as DTMFSignal;
-
 use RTCKit\Eqivo\Signal\Handler\AbstractHandler;
+
 use RTCKit\FiCore\Signal\AbstractSignal;
 use RTCKit\FiCore\Signal\Channel\DTMF as FiCoreDTMFSignal;
 
