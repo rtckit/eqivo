@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Hangup;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="HangupAllCallsResponse",
  *      required={"Message", "Success"},
  * )
  */
-class HangupAllCalls
+class HangupAllCalls extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'All Calls Hungup';
 
@@ -37,4 +42,14 @@ class HangupAllCalls
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Hangup\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        return $this;
+    }
 }

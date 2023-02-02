@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Conference\Member;
+use RTCKit\FiCore\Command\RequestInterface;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\Core;
 
 /**
  * @OA\Schema(
@@ -13,10 +16,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"ConferenceName", "MemberID"},
  * )
  */
-class ConferenceHangup
+class ConferenceHangup extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Name of the conference in question",
@@ -34,4 +35,18 @@ class ConferenceHangup
     public string $MemberID;
 
     public Core $core;
+
+    public function export(): RequestInterface
+    {
+        $conference = $this->core->getConferenceByRoom($this->ConferenceName);
+        $request = new Member\Request();
+        $request->action = Member\ActionEnum::Hangup;
+        $request->members = explode(',', $this->MemberID);
+
+        if (isset($conference)) {
+            $request->conference = $conference;
+        }
+
+        return $request;
+    }
 }

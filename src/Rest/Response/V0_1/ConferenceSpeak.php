@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Conference\Speak;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="ConferenceSpeakResponse",
  *      required={"Message", "RecordFile", "Success"},
  * )
  */
-class ConferenceSpeak
+class ConferenceSpeak extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Conference Speak Executed';
 
@@ -49,4 +54,14 @@ class ConferenceSpeak
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Speak\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        return $this;
+    }
 }

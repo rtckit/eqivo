@@ -4,39 +4,39 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest;
 
-use RTCKit\Eqivo\{
-    App,
-    Config,
-    EventEnum
-};
-use RTCKit\Eqivo\Exception\RestServerException;
-use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
-
+use function FastRoute\simpleDispatcher;
 use FastRoute\{Dispatcher, RouteCollector};
 use Monolog\Formatter\LineFormatter;
+
 use Monolog\Handler\PsrHandler;
 use Monolog\Logger;
 use Psr\Http\Message\ServerRequestInterface;
+use React\Http\HttpServer;
+use React\Http\Message\Response;
 use React\Http\Middleware\{
     LimitConcurrentRequestsMiddleware,
     RequestBodyBufferMiddleware,
     RequestBodyParserMiddleware,
     StreamingRequestMiddleware
 };
-use React\Http\HttpServer;
-use React\Http\Message\Response;
 use React\Promise\PromiseInterface;
-use React\Socket\SocketServer;
-use Wikimedia\IPSet;
-use Throwable;
-
-use function FastRoute\simpleDispatcher;
 use function React\Promise\resolve;
+use React\Socket\SocketServer;
+use RTCKit\Eqivo\Exception\RestServerException;
+use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
+use RTCKit\Eqivo\{
+    App,
+    Config,
+    EventEnum
+};
+
+use Throwable;
+use Wikimedia\IPSet;
 
 /**
  * @OA\Info(
- *      title="Eqivo API",
- *      description="Eqivo OpenApi Specification",
+ *      title="FiCore API",
+ *      description="FiCore OpenApi Specification",
  *      version="v0.1"
  * )
  *
@@ -67,7 +67,11 @@ class Server extends AbstractServer
     public function setApp(App $app): static
     {
         $this->app = $app;
-        $this->ipSet = new IPSet($this->app->config->restAllowedIps);
+
+        assert($this->app->config instanceof Config\Set);
+
+        $this->config = $this->app->config;
+        $this->ipSet = new IPSet($this->config->restAllowedIps);
 
         return $this;
     }
@@ -89,35 +93,35 @@ class Server extends AbstractServer
     {
         $this->logger = new Logger('rest');
         $this->logger->pushHandler(
-            (new PsrHandler($this->app->stdioLogger, $this->app->config->restServerLogLevel))->setFormatter(new LineFormatter)
+            (new PsrHandler($this->app->stdioLogger, $this->config->restServerLogLevel))->setFormatter(new LineFormatter())
         );
         $this->logger->debug('Starting ...');
 
-        if (!isset($this->app->config->restServerAdvertisedHost)) {
+        if (!isset($this->config->restServerAdvertisedHost)) {
             $hostname = gethostname();
 
             if (!$hostname) {
-                $this->app->config->restServerAdvertisedHost = $this->app->config->appPrefix;
+                $this->config->restServerAdvertisedHost = $this->config->appPrefix;
             } else {
-                $this->app->config->restServerAdvertisedHost = $hostname;
+                $this->config->restServerAdvertisedHost = $hostname;
             }
 
-            $this->logger->notice("restServerAdvertisedHost configuration parameter set to '{$this->app->config->restServerAdvertisedHost}'");
+            $this->logger->notice("restServerAdvertisedHost configuration parameter set to '{$this->config->restServerAdvertisedHost}'");
         }
 
-        if (!isset($this->app->config->restAllowedIps[0])) {
+        if (!isset($this->config->restAllowedIps[0])) {
             $this->logger->alert("restAllowedIps configuration parameter is empty, the REST server is unusable!");
 
             return;
         }
 
-        if (!isset($this->app->config->restAuthId, $this->app->config->restAuthId[0])) {
+        if (!isset($this->config->restAuthId, $this->config->restAuthId[0])) {
             $this->logger->alert("restAuthId configuration parameter is not set, the REST server is unusable!");
 
             return;
         }
 
-        if (!isset($this->app->config->restAuthToken, $this->app->config->restAuthToken[0])) {
+        if (!isset($this->config->restAuthToken, $this->config->restAuthToken[0])) {
             $this->logger->alert("restAuthToken configuration parameter is not set, the REST server is unusable!");
 
             return;
@@ -132,14 +136,14 @@ class Server extends AbstractServer
         });
 
         $server = new HttpServer(
-            new StreamingRequestMiddleware,
-            new LimitConcurrentRequestsMiddleware($this->app->config->restServerMaxHandlers),
-            new RequestBodyBufferMiddleware($this->app->config->restServerMaxRequestSize),
-            new RequestBodyParserMiddleware,
-            [$this, 'router']
+            new StreamingRequestMiddleware(),
+            new LimitConcurrentRequestsMiddleware($this->config->restServerMaxHandlers),
+            new RequestBodyBufferMiddleware($this->config->restServerMaxRequestSize),
+            new RequestBodyParserMiddleware(),
+            $this->router(...)
         );
 
-        $this->socket = new SocketServer($this->app->config->restServerBindIp . ':' . $this->app->config->restServerBindPort);
+        $this->socket = new SocketServer($this->config->restServerBindIp . ':' . $this->config->restServerBindPort);
 
         $server->listen($this->socket);
         $server->on('error', function (Throwable $t) {
@@ -187,6 +191,8 @@ class Server extends AbstractServer
 
         switch ($route[0]) {
             case Dispatcher::FOUND:
+                assert($route[1] instanceof Controller\ControllerInterface);
+
                 return $route[1]->execute($request);
 
             case Dispatcher::NOT_FOUND:

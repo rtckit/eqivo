@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Playback;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="SchedulePlayResponse",
  *      required={"Message", "Success", "SchedPlayId"},
  * )
  */
-class SchedulePlay
+class SchedulePlay extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Play Executed';
 
@@ -70,4 +75,18 @@ class SchedulePlay
      * )
      */
     public string $SchedPlayId;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Playback\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        if (isset($response->schedPlay->uuid)) {
+            $this->SchedPlayId = $response->schedPlay->uuid;
+        }
+
+        return $this;
+    }
 }

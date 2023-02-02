@@ -4,15 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Config;
 
-use Monolog\Logger;
 use InvalidArgumentException;
+
+use Monolog\Logger;
+use RTCKit\FiCore\Config\{
+    AbstractSet,
+    Core,
+    ResolverInterface,
+};
 
 class EnvironmentVars implements ResolverInterface
 {
     public const PREFIX = 'EQIVO_';
 
-    public function resolve(Set $config): void
+    public function resolve(AbstractSet $config): void
     {
+        assert($config instanceof Set);
+
         $env = getenv();
 
         if (isset($env[self::PREFIX . 'DAEMONIZE'])) {
@@ -56,6 +64,7 @@ class EnvironmentVars implements ResolverInterface
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'DEFAULT_ANSWER_URL environment variable' . PHP_EOL);
             } else {
                 $config->defaultAnswerUrl = $env[self::PREFIX . 'DEFAULT_ANSWER_URL'];
+                $config->defaultAnswerSequence = "{$config->defaultHttpMethod}:{$config->defaultAnswerUrl}";
             }
         }
 
@@ -63,7 +72,7 @@ class EnvironmentVars implements ResolverInterface
             if (!filter_var($env[self::PREFIX . 'DEFAULT_HANGUP_URL'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'DEFAULT_HANGUP_URL environment variable' . PHP_EOL);
             } else {
-                $config->defaultHangupUrl = $env[self::PREFIX . 'DEFAULT_HANGUP_URL'];
+                $config->defaultHangupSequence = "{$config->defaultHttpMethod}:{$env[self::PREFIX . 'DEFAULT_HANGUP_URL']}";
             }
         }
 
@@ -140,7 +149,7 @@ class EnvironmentVars implements ResolverInterface
             $allowed = explode(',', $env[self::PREFIX . 'REST_ALLOWED_IPS']);
             $errs = $config->setRestAllowedIps($allowed);
 
-            foreach($errs as $err) {
+            foreach ($errs as $err) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'REST_ALLOWED_IPS environment variable: ' . $err . PHP_EOL);
             }
         }
@@ -157,7 +166,7 @@ class EnvironmentVars implements ResolverInterface
             if (!filter_var($env[self::PREFIX . 'RECORD_URL'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'RECORD_URL environment variable' . PHP_EOL);
             } else {
-                $config->recordUrl = $env[self::PREFIX . 'RECORD_URL'];
+                $config->recordingAttn = "{$config->defaultHttpMethod}:{$env[self::PREFIX . 'RECORD_URL']}";
             }
         }
 
@@ -171,14 +180,14 @@ class EnvironmentVars implements ResolverInterface
                 assert(!is_null($ip));
                 assert(!is_null($port));
 
-                $config->outboundServerBindIp = $ip;
-                $config->outboundServerBindPort = $port;
+                $config->eslServerBindIp = $ip;
+                $config->eslServerBindPort = $port;
             }
         }
 
         if (isset($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'])) {
             if ($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'] === Set::INBOUND_SOCKET_ADDRESS) {
-                $config->outboundServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
+                $config->eslServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
             } else {
                 $err = Set::parseSocketAddr($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'], $ip, $port);
 
@@ -189,8 +198,8 @@ class EnvironmentVars implements ResolverInterface
                     assert(!is_null($ip));
                     assert(!is_null($port));
 
-                    $config->outboundServerAdvertisedIp = $ip;
-                    $config->outboundServerAdvertisedPort = $port;
+                    $config->eslServerAdvertisedIp = $ip;
+                    $config->eslServerAdvertisedPort = $port;
                 }
             }
         }
@@ -202,7 +211,7 @@ class EnvironmentVars implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->outboundServerLogLevel = Logger::toMonologLevel(trim($env[self::PREFIX . 'OUTBOUND_LOG_LEVEL']));
+                $config->eslServerLogLevel = Logger::toMonologLevel(trim($env[self::PREFIX . 'OUTBOUND_LOG_LEVEL']));
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'OUTBOUND_LOG_LEVEL environment variable: ' . $e->getMessage() . PHP_EOL);
             }
@@ -215,7 +224,7 @@ class EnvironmentVars implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->inboundServerLogLevel = Logger::toMonologLevel(trim($env[self::PREFIX . 'INBOUND_LOG_LEVEL']));
+                $config->eslClientLogLevel = Logger::toMonologLevel(trim($env[self::PREFIX . 'INBOUND_LOG_LEVEL']));
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'INBOUND_LOG_LEVEL environment variable: ' . $e->getMessage() . PHP_EOL);
             }
@@ -225,7 +234,7 @@ class EnvironmentVars implements ResolverInterface
             if (!filter_var($env[self::PREFIX . 'CALL_HEARTBEAT_URL'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'CALL_HEARTBEAT_URL environment variable' . PHP_EOL);
             } else {
-                $config->callHeartbeatUrl = $env[self::PREFIX . 'CALL_HEARTBEAT_URL'];
+                $config->heartbeatAttn = "{$config->defaultHttpMethod}:{$env[self::PREFIX . 'CALL_HEARTBEAT_URL']}";
             }
         }
     }

@@ -4,24 +4,22 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\{
-    App,
-    HangupCauseEnum
-};
+use Psr\Http\Message\ServerRequestInterface;
+use React\Promise\PromiseInterface;
 use RTCKit\Eqivo\Rest\Controller\{
     AuthenticatedTrait,
     ControllerInterface,
-    ErrorableTrait
 };
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
 use RTCKit\Eqivo\Rest\Inquiry\V0_1\CancelScheduledHangup as CancelScheduledHangupInquiry;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\CancelScheduledHangup as CancelScheduledHangupResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\CancelScheduledHangup as CancelScheduledHangupView;
 
-use Psr\Http\Message\ServerRequestInterface;
-use Ramsey\Uuid\Uuid;
-use React\Promise\PromiseInterface;
-use RTCKit\ESL;
-use function React\Promise\resolve;
+use RTCKit\Eqivo\Rest\View\V0_1\CancelScheduledHangup as CancelScheduledHangupView;
+use RTCKit\Eqivo\{
+    AbstractApp,
+    HangupCauseEnum
+};
 
 /**
  * @OA\Post(
@@ -50,53 +48,33 @@ use function React\Promise\resolve;
 class CancelScheduledHangup implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected CancelScheduledHangupView $view;
 
     public function __construct()
     {
-        $this->view = new CancelScheduledHangupView;
+        $this->view = new CancelScheduledHangupView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = CancelScheduledHangupInquiry::factory($request);
-                $response = new CancelScheduledHangupResponse;
+        $response = new CancelScheduledHangupResponse();
+        $inquiry = CancelScheduledHangupInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI CancelScheduledHangup with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function (?ESL\Response\ApiResponse $eslResponse = null) use ($response) {
-                        if (!isset($eslResponse) || !$eslResponse->isSuccessful()) {
-                            $response->Message = CancelScheduledHangupResponse::MESSAGE_FAILED;
-                            $response->Success = false;
-                        } else {
-                            $response->Message = CancelScheduledHangupResponse::MESSAGE_SUCCESS;
-                            $response->Success = true;
-                        }
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param CancelScheduledHangupInquiry $inquiry
-     * @param CancelScheduledHangupResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(CancelScheduledHangupInquiry $inquiry, CancelScheduledHangupResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof CancelScheduledHangupInquiry);
+        assert($response instanceof CancelScheduledHangupResponse);
+
         if (!isset($inquiry->SchedHangupId)) {
             $response->Message = CancelScheduledHangupResponse::MESSAGE_NO_SCHEDHUPID;
             $response->Success = false;
@@ -114,19 +92,5 @@ class CancelScheduledHangup implements ControllerInterface
         }
 
         $inquiry->hup = $schedHup;
-        $inquiry->core = $schedHup->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param CancelScheduledHangupInquiry $inquiry
-     * @param CancelScheduledHangupResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(CancelScheduledHangupInquiry $inquiry, CancelScheduledHangupResponse $response): PromiseInterface
-    {
-        return $inquiry->core->client->api((new ESL\Request\Api())->setParameters("sched_del {$inquiry->hup->uuid}"));
     }
 }

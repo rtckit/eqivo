@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Conference\Member;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="ConferenceHangupResponse",
  *      required={"Message", "Success"},
  * )
  */
-class ConferenceHangup
+class ConferenceHangup extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Conference Hangup Executed';
+
+    public const MESSAGE_FAILED = 'Conference Hangup Failed';
 
     public const MESSAGE_NO_CONFERENCE_NAME = 'ConferenceName Parameter must be present';
 
@@ -54,4 +61,15 @@ class ConferenceHangup
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Member\Response);
+
+        $this->Success = true;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+        $this->Members = $response->members;
+
+        return $this;
+    }
 }

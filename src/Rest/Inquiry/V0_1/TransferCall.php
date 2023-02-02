@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
-    Core,
-    Session
+use RTCKit\FiCore\Command\Channel\Redirect;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\{
+    Channel,
+    Core
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID", "Url"},
  * )
  */
-class TransferCall
+class TransferCall extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call",
@@ -36,7 +36,18 @@ class TransferCall
      */
     public string $Url;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public string $defaultHttpMethod;
+
+    public function export(): Redirect\Request
+    {
+        $request = new Redirect\Request();
+
+        $request->action = Redirect\ActionEnum::Redirect;
+        $request->channel = $this->channel;
+        $request->sequence = "{$this->defaultHttpMethod}:{$this->Url}";
+
+        return $request;
+    }
 }

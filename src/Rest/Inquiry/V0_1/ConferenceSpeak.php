@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Conference\Speak;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\Core;
 
 /**
  * @OA\Schema(
@@ -13,10 +15,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"ConferenceName", "Text", "MemberID"},
  * )
  */
-class ConferenceSpeak
+class ConferenceSpeak extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Name of the conference in question",
@@ -42,4 +42,19 @@ class ConferenceSpeak
     public string $MemberID;
 
     public Core $core;
+
+    public function export(): Speak\Request
+    {
+        $conference = $this->core->getConferenceByRoom($this->ConferenceName);
+        $request = new Speak\Request();
+        $request->action = Speak\ActionEnum::Speak;
+        $request->text = $this->Text;
+        $request->member = $this->MemberID;
+
+        if (isset($conference)) {
+            $request->conference = $conference;
+        }
+
+        return $request;
+    }
 }

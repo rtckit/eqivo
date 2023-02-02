@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Record;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="RecordStartResponse",
  *      required={"Message", "RecordFile", "Success"},
  * )
  */
-class RecordStart
+class RecordStart extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'RecordStart Executed';
 
@@ -58,4 +63,18 @@ class RecordStart
      * )
      */
     public bool $Success;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Record\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        if (isset($response->medium)) {
+            $this->RecordFile = $response->medium;
+        }
+
+        return $this;
+    }
 }

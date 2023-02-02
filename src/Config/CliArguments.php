@@ -4,13 +4,21 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Config;
 
-use Monolog\Level;
 use InvalidArgumentException;
+
+use Monolog\Level;
+use RTCKit\FiCore\Config\{
+    AbstractSet,
+    Core,
+    ResolverInterface,
+};
 
 class CliArguments implements ResolverInterface
 {
-    public function resolve(Set $config): void
+    public function resolve(AbstractSet $config): void
     {
+        assert($config instanceof Set);
+
         $args = getopt(
             'hc:fdp:',
             [
@@ -55,7 +63,7 @@ class CliArguments implements ResolverInterface
 
         if (isset($args['config']) && is_string($args['config'])) {
             $configFile = $args['config'];
-        } else if (isset($args['c']) && is_string($args['c'])) {
+        } elseif (isset($args['c']) && is_string($args['c'])) {
             $configFile = $args['c'];
         }
 
@@ -83,7 +91,7 @@ class CliArguments implements ResolverInterface
 
         if (isset($args['pidfile']) && is_string($args['pidfile'])) {
             $config->pidFile = $args['pidfile'];
-        } else if (isset($args['p']) && is_string($args['p'])) {
+        } elseif (isset($args['p']) && is_string($args['p'])) {
             $config->pidFile = $args['p'];
         }
 
@@ -128,6 +136,7 @@ class CliArguments implements ResolverInterface
                 fwrite(STDERR, 'Malformed --default-answer-url argument' . PHP_EOL);
             } else {
                 $config->defaultAnswerUrl = $args['default-answer-url'];
+                $config->defaultAnswerSequence = "{$config->defaultHttpMethod}:{$config->defaultAnswerUrl}";
             }
         }
 
@@ -135,7 +144,7 @@ class CliArguments implements ResolverInterface
             if (!filter_var($args['default-hangup-url'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed --default-hangup-url argument' . PHP_EOL);
             } else {
-                $config->defaultHangupUrl = $args['default-hangup-url'];
+                $config->defaultHangupSequence = "{$config->defaultHttpMethod}:{$args['default-hangup-url']}";
             }
         }
 
@@ -176,7 +185,7 @@ class CliArguments implements ResolverInterface
         }
 
         if (isset($args['rest-max-handlers'])) {
-            $value = (int)$args['rest-max-handlers'];
+            $value = intval($args['rest-max-handlers']);
 
             if ($value > 0) {
                 $config->restServerMaxHandlers = $value;
@@ -186,7 +195,7 @@ class CliArguments implements ResolverInterface
         }
 
         if (isset($args['rest-max-request-size'])) {
-            $value = (int)$args['rest-max-request-size'];
+            $value = intval($args['rest-max-request-size']);
 
             if ($value > 0) {
                 $config->restServerMaxRequestSize = $value;
@@ -212,7 +221,7 @@ class CliArguments implements ResolverInterface
             $allowed = explode(',', $args['rest-allowed-ips']);
             $errs = $config->setRestAllowedIps($allowed);
 
-            foreach($errs as $err) {
+            foreach ($errs as $err) {
                 fwrite(STDERR, 'Malformed --rest-allowed-ips argument: ' . $err . PHP_EOL);
             }
         }
@@ -229,7 +238,7 @@ class CliArguments implements ResolverInterface
             if (!filter_var($args['record-url'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed --record-url argument' . PHP_EOL);
             } else {
-                $config->recordUrl = $args['record-url'];
+                $config->recordingAttn = "{$config->defaultHttpMethod}:{$args['record-url']}";
             }
         }
 
@@ -243,14 +252,14 @@ class CliArguments implements ResolverInterface
                 assert(!is_null($ip));
                 assert(!is_null($port));
 
-                $config->outboundServerBindIp = $ip;
-                $config->outboundServerBindPort = $port;
+                $config->eslServerBindIp = $ip;
+                $config->eslServerBindPort = $port;
             }
         }
 
         if (isset($args['outbound-advertised-address']) && is_string($args['outbound-advertised-address'])) {
             if ($args['outbound-advertised-address'] === Set::INBOUND_SOCKET_ADDRESS) {
-                $config->outboundServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
+                $config->eslServerAdvertisedIp = Set::INBOUND_SOCKET_ADDRESS;
             } else {
                 $err = Set::parseSocketAddr($args['outbound-advertised-address'], $ip, $port);
 
@@ -261,8 +270,8 @@ class CliArguments implements ResolverInterface
                     assert(!is_null($ip));
                     assert(!is_null($port));
 
-                    $config->outboundServerAdvertisedIp = $ip;
-                    $config->outboundServerAdvertisedPort = $port;
+                    $config->eslServerAdvertisedIp = $ip;
+                    $config->eslServerAdvertisedPort = $port;
                 }
             }
         }
@@ -274,7 +283,7 @@ class CliArguments implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->outboundServerLogLevel = Level::fromName($args['outbound-log-level']);
+                $config->eslServerLogLevel = Level::fromName($args['outbound-log-level']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed --outbound-log-level argument: ' . $e->getMessage() . PHP_EOL);
             }
@@ -287,7 +296,7 @@ class CliArguments implements ResolverInterface
                  * @psalm-suppress ArgumentTypeCoercion
                  * @phpstan-ignore-next-line
                  */
-                $config->inboundServerLogLevel = Level::fromName($args['inbound-log-level']);
+                $config->eslClientLogLevel = Level::fromName($args['inbound-log-level']);
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed --inbound-log-level argument: ' . $e->getMessage() . PHP_EOL);
             }
@@ -297,14 +306,16 @@ class CliArguments implements ResolverInterface
             if (!filter_var($args['call-heartbeat-url'], FILTER_VALIDATE_URL)) {
                 fwrite(STDERR, 'Malformed --call-heartbeat-url argument' . PHP_EOL);
             } else {
-                $config->callHeartbeatUrl = $args['call-heartbeat-url'];
+                $config->heartbeatAttn = "{$config->defaultHttpMethod}:{$args['call-heartbeat-url']}";
             }
         }
     }
 
     protected function help(): never
     {
-        $cmd = !is_array($_SERVER['argv']) || empty($_SERVER['argv'][0]) ? './bin/eqivo' : $_SERVER['argv'][0];
+        $cmd = !isset($_SERVER['argv']) || !is_array($_SERVER['argv']) || empty($_SERVER['argv'][0])
+            ? './bin/ficore'
+            : $_SERVER['argv'][0];
 
         echo 'Usage: ' . $cmd . ' [options]' . PHP_EOL . PHP_EOL . 'Options:' . PHP_EOL;
         echo <<<EOD
@@ -316,7 +327,7 @@ class CliArguments implements ResolverInterface
 -------------------------------------------------------------------------------------------
   --user <USER>                   start process as a specific user
   --group <GROUP>                 start process as part of a specific group
-  --app-prefix <APP_PREFIX>       set application prefix file to APP_PREFIX (default: eqivo)
+  --app-prefix <APP_PREFIX>       set application prefix file to APP_PREFIX (default: ficore)
   --core <CORE>                   configures a FreeSWITCH ESL core connection; the format is
                                   as follows: [user:]password@host:port
                                     - user, optional, ESL username

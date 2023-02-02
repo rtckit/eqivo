@@ -4,15 +4,15 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo;
 
+use Monolog\Level;
+
+use React\Http\Browser;
+use React\Promise\PromiseInterface;
+use React\Socket\Connector;
 use RTCKit\Eqivo\Exception\{
     HttpClientException,
     MethodNotAllowedException
 };
-
-use Psr\Http\Message\ResponseInterface;
-use React\Http\Browser;
-use React\Promise\PromiseInterface;
-use React\Socket\Connector;
 
 class HttpClient implements HttpClientInterface
 {
@@ -28,6 +28,8 @@ class HttpClient implements HttpClientInterface
     {
         $this->app = $app;
         $this->signatureHeader = 'X-' . strtoupper($this->app->config->appPrefix) . '-SIGNATURE';
+
+        assert($this->app->config instanceof Config\Set);
 
         $connector = new Connector([
             'tls' => [
@@ -91,11 +93,34 @@ class HttpClient implements HttpClientInterface
                 break;
 
             default:
-                throw new MethodNotAllowedException;
+                throw new MethodNotAllowedException();
         }
 
         $headers[$this->signatureHeader] = $this->calculateSignature($reqUrl, $params);
 
+        if ($this->app->restServer->config->restServerLogLevel === Level::Debug) {
+            $curl = "curl --location --request {$method} '{$reqUrl}'";
+
+            foreach ($headers as $key => $value) {
+                $curl .= " --header '{$key}: {$value}'";
+            }
+
+            if ($method === 'POST') {
+                foreach ($params as $key => $value) {
+                    if (is_scalar($value)) {
+                        $curl .= " --data-urlencode '{$key}={$value}'";
+                    }
+                }
+            }
+
+            $this->app->planProducer->logger->debug('makeRequest() ' . $curl);
+        }
+
+        /**
+         * @psalm-suppress InvalidArgument
+         *
+         * Argument 1 of React\Http\Browser::withTimeout expects React\Http\number|bool, but 60 provided :D
+         */
         $request = $this->browser
             ->withFollowRedirects(true)
             ->withTimeout(self::TIMEOUT);
@@ -110,7 +135,7 @@ class HttpClient implements HttpClientInterface
                 break;
 
             default:
-                throw new MethodNotAllowedException;
+                throw new MethodNotAllowedException();
         }
 
         return $command;
@@ -118,7 +143,7 @@ class HttpClient implements HttpClientInterface
 
     /**
      * @param string $url
-     * @param array<string, string> $params
+     * @param array<int|string, mixed> $params
      */
     protected function calculateSignature(string $url, array $params): string
     {
@@ -136,4 +161,3 @@ class HttpClient implements HttpClientInterface
         return '';
     }
 }
-

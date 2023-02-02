@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
+use RTCKit\Eqivo\Command\Channel\SoundTouch as SoundTouchCommand;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\{
+    Channel,
     Core,
-    Session
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID"},
  * )
  */
-class SoundTouchStop
+class SoundTouchStop extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call",
@@ -28,7 +28,15 @@ class SoundTouchStop
      */
     public string $CallUUID;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): SoundTouchCommand\Request
+    {
+        $request = new SoundTouchCommand\Request();
+
+        $request->action = SoundTouchCommand\ActionEnum::Stop;
+        $request->channel = $this->channel;
+
+        return $request;
+    }
 }

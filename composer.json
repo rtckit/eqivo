@@ -1,7 +1,7 @@
 {
     "name": "rtckit/eqivo",
     "description": "Telephony API Platform",
-    "version": "0.5.5",
+    "version": "0.6.0",
     "keywords": [
         "telecommunications",
         "voip",
@@ -27,6 +27,7 @@
         "ext-ctype": "*",
         "ext-date": "*",
         "ext-filter": "*",
+        "ext-hash": "*",
         "ext-json": "*",
         "ext-libxml": "*",
         "ext-pcre": "*",
@@ -38,22 +39,14 @@
         "react/http": "^1.7",
         "react/promise": "^2.9",
         "rtckit/esl": "^0.8",
-        "rtckit/react-esl": "^0.8",
+        "rtckit/ficore": "0.0.2",
         "rtckit/sip": "^0.7",
         "symfony/yaml": "^6.1",
-        "wikimedia/ip-set": "^3.1",
-        "wyrihaximus/react-psr-3-stdio": "^3.0"
+        "wikimedia/ip-set": "^3.1"
     },
     "require-dev": {
-        "clue/block-react": "^1.5",
-        "phpstan/phpstan": "^1.8",
-        "phpunit/phpunit": "^9.5",
-        "vimeo/psalm": "^4.26",
-        "zircote/swagger-php": "^4.4"
-    },
-    "suggest": {
-        "ext-pcntl": "Enables daemonization support",
-        "ext-posix": "Enables UID/GID manipulation"
+        "phpstan/phpstan": "^1.9",
+        "vimeo/psalm": "^5.6"
     },
     "autoload": {
         "psr-4": {
@@ -77,8 +70,6 @@
     "scripts": {
         "phpstan": "php -d memory_limit=-1 ./vendor/bin/phpstan analyse -c ./etc/phpstan.neon -n -vvv --ansi --level=max src",
         "psalm": "php -d memory_limit=-1 ./vendor/bin/psalm --config=./etc/psalm.xml --show-info=true",
-        "phpunit": "php -d memory_limit=-1 ./vendor/bin/phpunit --debug -c ./etc/phpunit.xml.dist",
-        "coverage": "php -d memory_limit=-1 ./vendor/bin/phpunit --debug -c ./etc/phpunit.xml.dist --coverage-text --coverage-html=reports/coverage",
         "dev-docker": "docker build -f ./etc/Dockerfile.dev -t rtckit/eqivo ."
     }
 }

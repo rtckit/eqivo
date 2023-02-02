@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Channel\Originate;
+
+use RTCKit\FiCore\Command\RequestInterface;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Core,
+    Gateway,
+};
 
 /**
  * @OA\Schema(
@@ -13,9 +19,9 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"Delimiter", "From", "To", "Gateways", "AnswerUrl"},
  * )
  */
-class GroupCall
+class GroupCall extends AbstractInquiry
 {
-    use RequestFactoryTrait;
+    public string $AccountSID;
 
     /**
      * @var non-empty-string
@@ -178,7 +184,7 @@ class GroupCall
 
     /**
      * @OA\Property(
-     *     description="Core UUID of the desired FreeSWITCH instance (an Eqivo extension)",
+     *     description="Core UUID of the desired FreeSWITCH instance (an FiCore extension)",
      *     example="46ae8cd9-c28e-447d-ba40-a09cba49d474"
      * )
      */
@@ -186,7 +192,7 @@ class GroupCall
 
     public Core $core;
 
-    /** @var list<string> */
+    /** @var non-empty-array<int, string> */
     public array $toList;
 
     /** @var list<string> */
@@ -215,4 +221,108 @@ class GroupCall
 
     /** @var list<string> */
     public array $timeLimitList;
+
+    /** @var list<string> */
+    public array $confirmMedia;
+
+    public string $defaultHttpMethod;
+
+    public function export(): RequestInterface
+    {
+        $request = new Originate\Request();
+        $request->action = Originate\ActionEnum::Enterprise;
+
+        if (isset($this->core)) {
+            $request->core = $this->core;
+        }
+
+        $request->source = $this->From;
+
+        if (isset($this->callerNameList)) {
+            $request->sourceNames = $this->callerNameList;
+        }
+
+        $request->destinations = $this->toList;
+
+        if (isset($this->ExtraDialString)) {
+            $request->extraDialString = $this->ExtraDialString;
+        }
+
+        if (isset($this->HangupOnRing)) {
+            $request->onRingHangup = array_map('intval', $this->hupOnRingList);
+        }
+
+        if (isset($this->sendDigitsList)) {
+            foreach ($this->sendDigitsList as $idx => $sendDigits) {
+                if (isset($this->sendPreanswerList, $this->sendPreanswerList[$idx]) && $this->sendPreanswerList[$idx]) {
+                    /** @psalm-suppress PropertyTypeCoercion */
+                    $request->onMediaDTMF[$idx] = $sendDigits;
+                } else {
+                    /** @psalm-suppress PropertyTypeCoercion */
+                    $request->onAnswerDTMF[$idx] = $sendDigits;
+                }
+            }
+        }
+
+        if (isset($this->TimeLimit)) {
+            $request->maxDuration = array_map('intval', $this->timeLimitList);
+        }
+
+        $request->sequence = "{$this->defaultHttpMethod}:{$this->AnswerUrl}";
+
+        if (isset($this->RingUrl)) {
+            $request->onRingAttn = "{$this->defaultHttpMethod}:{$this->RingUrl}";
+        }
+
+        if (isset($this->HangupUrl)) {
+            $request->onHangupAttn = "{$this->defaultHttpMethod}:{$this->HangupUrl}";
+        }
+
+        $request->gateways = [[]];
+
+        foreach ($this->gwList as $destIdx => $destGateways) {
+            /** @psalm-suppress PropertyTypeCoercion */
+            $request->gateways[$destIdx] = [];
+            $gateways = explode(',', $destGateways);
+            $gatewayCodecs = !empty($this->gwCodecsList[$destIdx])
+                ? str_getcsv($this->gwCodecsList[$destIdx], ',', "'")
+                : [];
+            $gatewayTimeouts = !empty($this->gwTimeoutsList[$destIdx]) ? explode(',', $this->gwTimeoutsList[$destIdx]) : [];
+            $gatewayRetries = !empty($this->gwRetriesList[$destIdx]) ? explode(',', $this->gwRetriesList[$destIdx]) : [];
+
+            foreach ($gateways as $gwIdx => $gateway) {
+                $gw = new Gateway();
+                $gw->name = $gateway;
+
+                if (!empty($gatewayCodecs[$gwIdx])) {
+                    $gw->codecs = $gatewayCodecs[$gwIdx];
+                }
+
+                if (!empty($gatewayTimeouts[$gwIdx])) {
+                    $gw->timeout = intval($gatewayTimeouts[$gwIdx]);
+                }
+
+                $gw->tries = empty($gatewayRetries[$gwIdx]) ? 1 : (int)$gatewayRetries[$gwIdx];
+
+                /** @psalm-suppress PropertyTypeCoercion */
+                $request->gateways[$destIdx][] = $gw;
+            }
+        }
+
+        if (isset($this->confirmMedia, $this->confirmMedia[0])) {
+            $request->confirmMedia = $this->confirmMedia;
+        }
+
+        if (isset($this->ConfirmKey)) {
+            $request->confirmTone = $this->ConfirmKey;
+        }
+
+        $request->rejectCauses = explode(',', $this->RejectCauses);
+
+        if (isset($this->AccountSID)) {
+            $request->tags['accountsid'] = $this->AccountSID;
+        }
+
+        return $request;
+    }
 }

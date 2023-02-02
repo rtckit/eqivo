@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
-    Core,
-    Session
+use RTCKit\FiCore\Command\Channel\DTMF;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    CallLegEnum,
+    Channel,
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID", "Digits"},
  * )
  */
-class SendDigits
+class SendDigits extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call to send DTMF to",
@@ -46,7 +46,17 @@ class SendDigits
      */
     public string $Leg;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): DTMF\Request
+    {
+        $request = new DTMF\Request();
+
+        $request->action = DTMF\ActionEnum::Send;
+        $request->channel = $this->channel;
+        $request->leg = CallLegEnum::from($this->Leg);
+        $request->tones = $this->Digits;
+
+        return $request;
+    }
 }

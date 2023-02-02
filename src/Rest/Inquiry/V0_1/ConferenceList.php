@@ -4,17 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\RequestInterface;
+
+use RTCKit\Eqivo\Command\Conference\Query;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
 
 /**
  * @OA\Schema(
  *     schema="ConferenceListParameters",
  * )
  */
-class ConferenceList
+class ConferenceList extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Restricts listed members to the provided values (comma separated member ID list)",
@@ -50,4 +51,16 @@ class ConferenceList
      * )
      */
     public string $DeafFilter;
+
+    public function export(): RequestInterface
+    {
+        $request = new Query\Request();
+        $request->action = Query\ActionEnum::Members;
+        $request->members = isset($this->MemberFilter) ? explode(',', $this->MemberFilter) : [];
+        $request->channels = isset($this->CallUUIDFilter) ? explode(',', $this->CallUUIDFilter) : [];
+        $request->muted = isset($this->MutedFilter) ? ($this->MutedFilter === 'true') : false;
+        $request->deaf = isset($this->DeafFilter) ? ($this->DeafFilter === 'true') : false;
+
+        return $request;
+    }
 }

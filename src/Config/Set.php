@@ -6,36 +6,13 @@ namespace RTCKit\Eqivo\Config;
 
 use Monolog\Level;
 
-class Set
+use RTCKit\FiCore;
+
+class Set extends FiCore\Config\AbstractSet
 {
-    public const INBOUND_SOCKET_ADDRESS = 'inbound_socket_address';
-
-    /* General settings */
-    public bool $daemonize = false;
-
-    public string $userName;
-
-    public string $groupName;
-
-    public string $appPrefix = 'eqivo';
-
-    public string $pidFile = '/tmp/eqivo.pid';
-
-    public string $legacyConfigFile;
-
-    public string $configFile;
-
-    /** @var list<Core> */
-    public array $cores = [];
-
     public string $defaultHttpMethod = 'POST';
 
     public string $defaultAnswerUrl;
-
-    public string $defaultHangupUrl;
-
-    /** @var array<int, string> */
-    public array $extraChannelVars = [];
 
     public bool $verifyPeer = true;
 
@@ -60,57 +37,6 @@ class Set
     public string $restAuthId;
 
     public string $restAuthToken;
-
-    public string $recordUrl;
-
-    /* Outbound Server settings */
-    public string $outboundServerBindIp = '0.0.0.0';
-
-    public int $outboundServerBindPort = 8084;
-
-    public string $outboundServerAdvertisedIp = '127.0.0.1';
-
-    public int $outboundServerAdvertisedPort;
-
-    public Level $outboundServerLogLevel = Level::Debug;
-
-    /* Inbound Server settings */
-    public Level $inboundServerLogLevel = Level::Debug;
-
-    public string $callHeartbeatUrl;
-
-    public static function parseSocketAddr(string $str, ?string &$ip, ?int &$port): ?string
-    {
-        $ret = self::parseHostPort($str, $ip, $port);
-
-        if ($ret) {
-            return $ret;
-        }
-
-        if (!filter_var($ip, FILTER_VALIDATE_IP)) {
-            return 'Malformed address (IP address required)';
-        }
-
-        return null;
-    }
-
-    public static function parseHostPort(string $str, ?string &$host, ?int &$port): ?string
-    {
-        $parts = explode(':', $str);
-
-        if (count($parts) !== 2) {
-            return 'Malformed address (missing port number)';
-        } else {
-            $host = trim($parts[0]);
-            $port = (int)$parts[1];
-
-            if (!$port || ($port > 65535)) {
-                return 'Malformed address (port number out of bounds)';
-            }
-        }
-
-        return null;
-    }
 
     /**
      * Configure allowed CIDRs off a mixed list of IPs/CIDRs

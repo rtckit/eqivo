@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
-    Core,
-    Session
+use RTCKit\FiCore\Command\Channel\Record;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Channel,
+    Core
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +17,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID", "RecordFile"},
  * )
  */
-class RecordStop
+class RecordStop extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call",
@@ -36,7 +35,16 @@ class RecordStop
      */
     public string $RecordFile;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): Record\Request
+    {
+        $request = new Record\Request();
+
+        $request->action = Record\ActionEnum::Stop;
+        $request->channel = $this->channel;
+        $request->medium = $this->RecordFile;
+
+        return $request;
+    }
 }

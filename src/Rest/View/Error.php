@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\View;
 
-use RTCKit\Eqivo\App;
-use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
-
 use React\Http\Message\Response;
+use RTCKit\Eqivo\App;
+
+use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
 
 class Error implements ViewInterface
 {
@@ -18,7 +18,7 @@ class Error implements ViewInterface
     {
         $this->headers = [
             'Content-type' => 'text/html',
-            'Server' => 'eqivo/v' . App::VERSION,
+            'Server' => 'ficore/v' . App::VERSION,
         ];
     }
 

@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceUnmute as ConferenceUnmuteInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceUnmute as ConferenceUnmuteResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceUnmute as ConferenceUnmuteView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceUnmute as ConferenceUnmuteInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceUnmute as ConferenceUnmuteResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceUnmute as ConferenceUnmuteView;
 
 /**
  * @OA\Post(
@@ -48,48 +49,33 @@ use function React\Promise\{
 class ConferenceUnmute implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected ConferenceUnmuteView $view;
 
     public function __construct()
     {
-        $this->view = new ConferenceUnmuteView;
+        $this->view = new ConferenceUnmuteView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceUnmuteInquiry::factory($request);
-                $response = new ConferenceUnmuteResponse;
+        $response = new ConferenceUnmuteResponse();
+        $inquiry = ConferenceUnmuteInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceUnmute with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        $response->Message = ConferenceUnmuteResponse::MESSAGE_SUCCESS;
-                        $response->Success = true;
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceUnmuteInquiry $inquiry
-     * @param ConferenceUnmuteResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceUnmuteInquiry $inquiry, ConferenceUnmuteResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceUnmuteInquiry);
+        assert($response instanceof ConferenceUnmuteResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceUnmuteResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -104,7 +90,7 @@ class ConferenceUnmute implements ControllerInterface
             return;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceUnmuteResponse::MESSAGE_NOT_FOUND;
@@ -114,37 +100,5 @@ class ConferenceUnmute implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceUnmuteInquiry $inquiry
-     * @param ConferenceUnmuteResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceUnmuteInquiry $inquiry, ConferenceUnmuteResponse $response): PromiseInterface
-    {
-        $members = explode(',', $inquiry->MemberID);
-        $promises = [];
-
-        foreach ($members as $member) {
-            $promises[] = $inquiry->core->client->api(
-                (new ESL\Request\Api())->setParameters("conference {$inquiry->ConferenceName} unmute {$member}")
-            )
-                ->then (function (ESL\Response\ApiResponse $eslResponse) use ($member, $response): PromiseInterface {
-                    if (!$eslResponse->isSuccessful()) {
-                        $this->app->restServer->logger->warning('Conference Unmute Failed for ' . $member);
-                    } else {
-                        $this->app->restServer->logger->debug('Conference Unmute Done for ' . $member);
-                        $response->Members[] = $member;
-                    }
-
-                    return resolve();
-                });
-        }
-
-        return all($promises);
     }
 }

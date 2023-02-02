@@ -4,25 +4,24 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\ScheduledPlay;
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait,
-    PlaySoundsTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\SchedulePlay as SchedulePlayInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\SchedulePlay as SchedulePlayResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\SchedulePlay as SchedulePlayView;
-
 use Psr\Http\Message\ServerRequestInterface;
-use Ramsey\Uuid\Uuid;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\FiCore\Command\Channel\Playback;
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\SchedulePlay as SchedulePlayInquiry;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\SchedulePlay as SchedulePlayResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\SchedulePlay as SchedulePlayView;
 
 /**
  * @OA\Post(
@@ -51,8 +50,6 @@ use function React\Promise\{
 class SchedulePlay implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
-    use PlaySoundsTrait;
 
     public const DEFAULT_LENGTH = 3600;
 
@@ -64,42 +61,28 @@ class SchedulePlay implements ControllerInterface
 
     public function __construct()
     {
-        $this->view = new SchedulePlayView;
+        $this->view = new SchedulePlayView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = SchedulePlayInquiry::factory($request);
-                $response = new SchedulePlayResponse;
+        $response = new SchedulePlayResponse();
+        $inquiry = SchedulePlayInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI SchedulePlay with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        $response->Message ??= SchedulePlayResponse::MESSAGE_SUCCESS;
-                        $response->Success ??= true;
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param SchedulePlayInquiry $inquiry
-     * @param SchedulePlayResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(SchedulePlayInquiry $inquiry, SchedulePlayResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof SchedulePlayInquiry);
+        assert($response instanceof SchedulePlayResponse);
+
         $inquiry->Loop = isset($inquiry->Loop) ? ($inquiry->Loop === 'true') : false;
         $inquiry->Mix = isset($inquiry->Mix) ? ($inquiry->Mix === 'false') : true;
 
@@ -163,11 +146,12 @@ class SchedulePlay implements ControllerInterface
             $response->Success = false;
         }
 
-        foreach ($inquiry->soundList as $key => $path) {
-            if (strpos($path, 'http_cache://') === 0) {
-                $inquiry->soundList[$key] = str_replace(' ', '%20', $path);
+        /** @psalm-suppress PropertyTypeCoercion */
+        array_walk($inquiry->soundList, function (string &$entry) {
+            if (strpos($entry, 'http_cache://') === 0) {
+                $entry = str_replace(' ', '%20', $entry);
             }
-        }
+        });
 
         $inquiry->aLegFlags = $inquiry->bLegFlags = '';
 
@@ -183,61 +167,15 @@ class SchedulePlay implements ControllerInterface
             $inquiry->bLegFlags .= 'r';
         }
 
-        $playStr = implode('!', $inquiry->soundList);
-        $inquiry->playStringALeg = 'file_string://' . $playStr;
-        $inquiry->playStringBLeg = 'file_string://silence_stream://1!' . $playStr;
+        $channel = $this->app->getChannel($inquiry->CallUUID);
 
-        $session = $this->app->getSession($inquiry->CallUUID);
-
-        if (!isset($session)) {
+        if (!isset($channel)) {
             $response->Message = SchedulePlayResponse::MESSAGE_NOT_FOUND;
             $response->Success = false;
 
             return;
         }
 
-        $inquiry->session = $session;
-        $inquiry->core = $session->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param SchedulePlayInquiry $inquiry
-     * @param SchedulePlayResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(SchedulePlayInquiry $inquiry, SchedulePlayResponse $response): PromiseInterface
-    {
-        $schedPlay = new ScheduledPlay;
-        $schedPlay->uuid = Uuid::uuid4()->toString();
-        $schedPlay->timeout = (int)$inquiry->Time;
-        $response->SchedPlayId = $schedPlay->uuid;
-
-        $inquiry->core->addScheduledPlay($schedPlay);
-
-        return $this->getPlayCommands($inquiry)
-            ->then (function (array $commands) use ($inquiry, $response, $schedPlay): PromiseInterface {
-                $promises = [];
-
-                foreach ($commands as $command) {
-                    $command = "sched_api +{$inquiry->Time} {$schedPlay->uuid} {$command}";
-
-                    $promises[] = $inquiry->core->client->api((new ESL\Request\Api())->setParameters($command))
-                        ->then(function (ESL\Response\ApiResponse $eslResponse) use ($response, $command): PromiseInterface {
-                                if (!$eslResponse->isSuccessful()) {
-                                    $response->Message = SchedulePlayResponse::MESSAGE_FAILED;
-                                    $response->Success = false;
-
-                                    $this->app->restServer->logger->error("SchedulePlay Failed '{$command}': " . ($eslResponse->getBody() ?? '<null>'));
-                                }
-
-                                return resolve();
-                        });
-                }
-
-                return all($promises);
-            });
+        $inquiry->channel = $channel;
     }
 }

@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\RecordStart as RecordStartInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\RecordStart as RecordStartResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\RecordStart as RecordStartView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\RecordStart as RecordStartInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\RecordStart as RecordStartResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\RecordStart as RecordStartView;
 
 /**
  * @OA\Post(
@@ -48,7 +49,6 @@ use function React\Promise\{
 class RecordStart implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     public const RECORD_FILE_FORMATS = ['wav', 'mp3'];
 
@@ -60,47 +60,28 @@ class RecordStart implements ControllerInterface
 
     public function __construct()
     {
-        $this->view = new RecordStartView;
+        $this->view = new RecordStartView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = RecordStartInquiry::factory($request);
-                $response = new RecordStartResponse;
+        $response = new RecordStartResponse();
+        $inquiry = RecordStartInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI RecordStart with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function (?ESL\Response\ApiResponse $eslResponse = null) use ($response) {
-                        if (!isset($eslResponse) || !$eslResponse->isSuccessful()) {
-                            $response->Message = RecordStartResponse::MESSAGE_FAILED;
-                            $response->Success = false;
-                        } else {
-                            $response->Message = RecordStartResponse::MESSAGE_SUCCESS;
-                            $response->Success = true;
-                        }
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param RecordStartInquiry $inquiry
-     * @param RecordStartResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(RecordStartInquiry $inquiry, RecordStartResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof RecordStartInquiry);
+        assert($response instanceof RecordStartResponse);
+
         if (!isset($inquiry->CallUUID)) {
             $response->Message = RecordStartResponse::MESSAGE_NO_CALLUUID;
             $response->Success = false;
@@ -142,33 +123,15 @@ class RecordStart implements ControllerInterface
             $inquiry->FileName = date('Ymd-His') . '_' . $inquiry->CallUUID;
         }
 
-        $session = $this->app->getSession($inquiry->CallUUID);
+        $channel = $this->app->getChannel($inquiry->CallUUID);
 
-        if (!isset($session)) {
+        if (!isset($channel)) {
             $response->Message = RecordStartResponse::MESSAGE_NOT_FOUND;
             $response->Success = false;
 
             return;
         }
 
-        $inquiry->session = $session;
-        $inquiry->core = $session->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param RecordStartInquiry $inquiry
-     * @param RecordStartResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(RecordStartInquiry $inquiry, RecordStartResponse $response): PromiseInterface
-    {
-        $response->RecordFile = "{$inquiry->FilePath}{$inquiry->FileName}.{$inquiry->FileFormat}";
-
-        return $inquiry->core->client->api(
-            (new ESL\Request\Api())->setParameters("uuid_record {$inquiry->CallUUID} start {$response->RecordFile} {$inquiry->TimeLimit}")
-        );
+        $inquiry->channel = $channel;
     }
 }

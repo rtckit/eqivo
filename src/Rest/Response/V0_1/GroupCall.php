@@ -4,13 +4,18 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Originate;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="GroupCallResponse",
  *      required={"Message", "RequestUUID", "Success", "RestApiServer"},
  * )
  */
-class GroupCall
+class GroupCall extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'GroupCall Request Executed';
 
@@ -75,11 +80,25 @@ class GroupCall
     public bool $Success;
 
     /**
-     * API server which handled this request (an Eqivo extension)
+     * API server which handled this request (an FiCore extension)
      *
      * @OA\Property(
      *      example="localhost"
      * )
      */
     public string $RestApiServer;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Originate\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        if (isset($response->originateJobs[0])) {
+            $this->RequestUUID = $response->originateJobs[0]->uuid;
+        }
+
+        return $this;
+    }
 }

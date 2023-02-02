@@ -4,18 +4,22 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Channel\Hangup;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+
+use RTCKit\FiCore\Switch\{
+    Channel,
+    HangupCauseEnum,
+    OriginateJob,
+};
 
 /**
  * @OA\Schema(
  *     schema="HangupCallParameters",
  * )
  */
-class HangupCall
+class HangupCall extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call (when established); this parameter is mutually exclusive with RequestUUID",
@@ -31,4 +35,25 @@ class HangupCall
      * )
      */
     public string $RequestUUID;
+
+    public Channel $channel;
+
+    public OriginateJob $job;
+
+    public function export(): Hangup\Request
+    {
+        $request = new Hangup\Request();
+
+        if (isset($this->channel)) {
+            $request->action = Hangup\ActionEnum::Channel;
+            $request->cause = HangupCauseEnum::NORMAL_CLEARING;
+            $request->channel = $this->channel;
+        } else {
+            $request->action = Hangup\ActionEnum::Job;
+            $request->cause = HangupCauseEnum::NORMAL_CLEARING;
+            $request->originateJob = $this->job;
+        }
+
+        return $request;
+    }
 }

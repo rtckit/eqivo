@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\View;
 
-use RTCKit\Eqivo\App;
-use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
-
 use React\Http\Message\Response;
+use RTCKit\Eqivo\App;
+
+use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
 
 class Json implements ViewInterface
 {

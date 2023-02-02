@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceRecordStart as ConferenceRecordStartInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceRecordStart as ConferenceRecordStartResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceRecordStart as ConferenceRecordStartView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceRecordStart as ConferenceRecordStartInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceRecordStart as ConferenceRecordStartResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceRecordStart as ConferenceRecordStartView;
 
 /**
  * @OA\Post(
@@ -48,7 +49,6 @@ use function React\Promise\{
 class ConferenceRecordStart implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     public const RECORD_FILE_FORMATS = ['wav', 'mp3'];
 
@@ -58,39 +58,28 @@ class ConferenceRecordStart implements ControllerInterface
 
     public function __construct()
     {
-        $this->view = new ConferenceRecordStartView;
+        $this->view = new ConferenceRecordStartView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceRecordStartInquiry::factory($request);
-                $response = new ConferenceRecordStartResponse;
+        $response = new ConferenceRecordStartResponse();
+        $inquiry = ConferenceRecordStartInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceRecordStart with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceRecordStartInquiry $inquiry
-     * @param ConferenceRecordStartResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceRecordStartInquiry $inquiry, ConferenceRecordStartResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceRecordStartInquiry);
+        assert($response instanceof ConferenceRecordStartResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceRecordStartResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -119,7 +108,7 @@ class ConferenceRecordStart implements ControllerInterface
             $inquiry->FileName = date('Ymd-His') . '_' . $inquiry->ConferenceName;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceRecordStartResponse::MESSAGE_NOT_FOUND;
@@ -129,34 +118,5 @@ class ConferenceRecordStart implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceRecordStartInquiry $inquiry
-     * @param ConferenceRecordStartResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceRecordStartInquiry $inquiry, ConferenceRecordStartResponse $response): PromiseInterface
-    {
-        $recordFile = "{$inquiry->FilePath}{$inquiry->FileName}.{$inquiry->FileFormat}";
-
-        return $inquiry->core->client->api(
-                (new ESL\Request\Api())->setParameters("conference {$inquiry->ConferenceName} record {$recordFile}")
-            )
-            ->then (function (ESL\Response\ApiResponse $eslResponse) use ($recordFile, $response): PromiseInterface {
-                if (!$eslResponse->isSuccessful()) {
-                    $response->Message = ConferenceRecordStartResponse::MESSAGE_FAILED;
-                    $response->Success = false;
-                } else {
-                    $response->Message = ConferenceRecordStartResponse::MESSAGE_SUCCESS;
-                    $response->RecordFile = $recordFile;
-                    $response->Success = true;
-                }
-
-                return resolve();
-            });
     }
 }

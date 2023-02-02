@@ -4,22 +4,23 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Controller\V0_1;
 
-use RTCKit\Eqivo\Rest\Controller\{
-    AuthenticatedTrait,
-    ControllerInterface,
-    ErrorableTrait
-};
-use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceKick as ConferenceKickInquiry;
-use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceKick as ConferenceKickResponse;
-use RTCKit\Eqivo\Rest\View\V0_1\ConferenceKick as ConferenceKickView;
-
 use Psr\Http\Message\ServerRequestInterface;
 use React\Promise\PromiseInterface;
-use RTCKit\ESL;
 use function React\Promise\{
     all,
     resolve
 };
+use RTCKit\Eqivo\Rest\Controller\{
+    AuthenticatedTrait,
+    ControllerInterface,
+};
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\Eqivo\Rest\Inquiry\V0_1\ConferenceKick as ConferenceKickInquiry;
+
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceKick as ConferenceKickResponse;
+
+use RTCKit\Eqivo\Rest\View\V0_1\ConferenceKick as ConferenceKickView;
 
 /**
  * @OA\Post(
@@ -48,48 +49,33 @@ use function React\Promise\{
 class ConferenceKick implements ControllerInterface
 {
     use AuthenticatedTrait;
-    use ErrorableTrait;
 
     protected ConferenceKickView $view;
 
     public function __construct()
     {
-        $this->view = new ConferenceKickView;
+        $this->view = new ConferenceKickView();
     }
 
     public function execute(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->authenticate($request)
-            ->then(function () use ($request): PromiseInterface {
-                $inquiry = ConferenceKickInquiry::factory($request);
-                $response = new ConferenceKickResponse;
+        $response = new ConferenceKickResponse();
+        $inquiry = ConferenceKickInquiry::factory($request);
 
-                $this->app->restServer->logger->debug('RESTAPI ConferenceKick with ' . json_encode($inquiry));
-                $this->validate($inquiry, $response);
-
-                if (isset($response->Success) && !$response->Success) {
-                    return resolve($this->view->execute($response));
-                }
-
-                return $this->perform($inquiry, $response)
-                    ->then(function () use ($response) {
-                        $response->Message = ConferenceKickResponse::MESSAGE_SUCCESS;
-                        $response->Success = true;
-
-                        return resolve($this->view->execute($response));
-                    });
-            })
-            ->otherwise([$this, 'exceptionHandler']);
+        return $this->doExecute($request, $response, $inquiry);
     }
 
     /**
      * Validates API call parameters
      *
-     * @param ConferenceKickInquiry $inquiry
-     * @param ConferenceKickResponse $response
+     * @param AbstractInquiry $inquiry
+     * @param AbstractResponse $response
      */
-    public function validate(ConferenceKickInquiry $inquiry, ConferenceKickResponse $response): void
+    public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        assert($inquiry instanceof ConferenceKickInquiry);
+        assert($response instanceof ConferenceKickResponse);
+
         if (!isset($inquiry->ConferenceName)) {
             $response->Message = ConferenceKickResponse::MESSAGE_NO_CONFERENCE_NAME;
             $response->Success = false;
@@ -104,7 +90,7 @@ class ConferenceKick implements ControllerInterface
             return;
         }
 
-        $conference = $this->app->getConference($inquiry->ConferenceName);
+        $conference = $this->app->getConferenceByRoom($inquiry->ConferenceName);
 
         if (!isset($conference)) {
             $response->Message = ConferenceKickResponse::MESSAGE_NOT_FOUND;
@@ -114,37 +100,5 @@ class ConferenceKick implements ControllerInterface
         }
 
         $inquiry->core = $conference->core;
-    }
-
-    /**
-     * Performs the API call function
-     *
-     * @param ConferenceKickInquiry $inquiry
-     * @param ConferenceKickResponse $response
-     *
-     * @return PromiseInterface
-     */
-    public function perform(ConferenceKickInquiry $inquiry, ConferenceKickResponse $response): PromiseInterface
-    {
-        $members = explode(',', $inquiry->MemberID);
-        $promises = [];
-
-        foreach ($members as $member) {
-            $promises[] = $inquiry->core->client->api(
-                (new ESL\Request\Api())->setParameters("conference {$inquiry->ConferenceName} kick {$member}")
-            )
-                ->then (function (ESL\Response\ApiResponse $eslResponse) use ($member, $response): PromiseInterface {
-                    if (!$eslResponse->isSuccessful()) {
-                        $this->app->restServer->logger->warning('Conference Kick Failed for ' . $member);
-                    } else {
-                        $this->app->restServer->logger->debug('Conference Kick Done for ' . $member);
-                        $response->Members[] = $member;
-                    }
-
-                    return resolve();
-                });
-        }
-
-        return all($promises);
     }
 }

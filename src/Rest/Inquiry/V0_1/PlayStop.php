@@ -4,11 +4,13 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
-    Core,
-    Session
+use RTCKit\FiCore\Command\Channel\Playback;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Channel,
+    Core
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +18,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"CallUUID"},
  * )
  */
-class PlayStop
+class PlayStop extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call",
@@ -28,7 +28,15 @@ class PlayStop
      */
     public string $CallUUID;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): Playback\Request
+    {
+        $request = new Playback\Request();
+
+        $request->action = Playback\ActionEnum::Stop;
+        $request->channel = $this->channel;
+
+        return $request;
+    }
 }

@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Conference\Record;
+
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\Core;
 
 /**
  * @OA\Schema(
@@ -13,10 +15,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"ConferenceName"},
  * )
  */
-class ConferenceRecordStart
+class ConferenceRecordStart extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Name of the conference in question",
@@ -54,4 +54,18 @@ class ConferenceRecordStart
     public string $FileName;
 
     public Core $core;
+
+    public function export(): Record\Request
+    {
+        $conference = $this->core->getConferenceByRoom($this->ConferenceName);
+        $request = new Record\Request();
+        $request->action = Record\ActionEnum::Start;
+        $request->medium = "{$this->FilePath}{$this->FileName}.{$this->FileFormat}";
+
+        if (isset($conference)) {
+            $request->conference = $conference;
+        }
+
+        return $request;
+    }
 }

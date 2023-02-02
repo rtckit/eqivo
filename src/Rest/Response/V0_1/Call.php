@@ -4,15 +4,22 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Response\V0_1;
 
+use RTCKit\FiCore\Command\Channel\Originate;
+
+use RTCKit\FiCore\Command\ResponseInterface;
+use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+
 /**
  * @OA\Schema(
  *      schema="CallResponse",
  *      required={"Message", "RequestUUID", "Success", "RestApiServer"},
  * )
  */
-class Call
+class Call extends AbstractResponse
 {
     public const MESSAGE_SUCCESS = 'Call Request Executed';
+
+    public const MESSAGE_FAILED = 'Call Request Failed';
 
     public const MESSAGE_MANDATORY_MISSING = 'Mandatory Parameters Missing';
 
@@ -82,11 +89,25 @@ class Call
     public bool $Success;
 
     /**
-     * API server which handled this request (an Eqivo extension)
+     * API server which handled this request (an FiCore extension)
      *
      * @OA\Property(
      *      example="localhost"
      * )
      */
     public string $RestApiServer;
+
+    public function import(ResponseInterface $response): static
+    {
+        assert($response instanceof Originate\Response);
+
+        $this->Success = $response->successful;
+        $this->Message = $response->successful ? self::MESSAGE_SUCCESS : self::MESSAGE_FAILED;
+
+        if (isset($response->originateJobs, $response->originateJobs[0])) {
+            $this->RequestUUID = $response->originateJobs[0]->uuid;
+        }
+
+        return $this;
+    }
 }

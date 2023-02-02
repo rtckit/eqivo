@@ -4,11 +4,12 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\{
-    Core,
-    Session
+use RTCKit\FiCore\Command\Channel\Record;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Channel,
+    Core
 };
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
 
 /**
  * @OA\Schema(
@@ -16,10 +17,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"ConferenceName"},
  * )
  */
-class RecordStart
+class RecordStart extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Unique identifier of the call to be recorded",
@@ -67,7 +66,17 @@ class RecordStart
      */
     public string|int $TimeLimit;
 
-    public Session $session;
+    public Channel $channel;
 
-    public Core $core;
+    public function export(): Record\Request
+    {
+        $request = new Record\Request();
+
+        $request->action = Record\ActionEnum::Start;
+        $request->channel = $this->channel;
+        $request->medium = "{$this->FilePath}{$this->FileName}.{$this->FileFormat}";
+        $request->duration = (float)$this->TimeLimit;
+
+        return $request;
+    }
 }

@@ -4,8 +4,15 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Rest\Inquiry\V0_1;
 
-use RTCKit\Eqivo\Core;
-use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
+use RTCKit\FiCore\Command\Channel\Originate;
+use RTCKit\FiCore\Command\RequestInterface;
+
+use RTCKit\Eqivo\Rest\Controller\V0_1\Call as CallController;
+use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
+use RTCKit\FiCore\Switch\{
+    Core,
+    Gateway,
+};
 
 /**
  * @OA\Schema(
@@ -13,10 +20,8 @@ use RTCKit\Eqivo\Rest\Inquiry\RequestFactoryTrait;
  *     required={"From", "To", "Gateways", "AnswerUrl"},
  * )
  */
-class Call
+class Call extends AbstractInquiry
 {
-    use RequestFactoryTrait;
-
     /**
      * @OA\Property(
      *     description="Phone number to be used as Caller ID",
@@ -72,6 +77,8 @@ class Call
      * )
      */
     public string $RingUrl;
+
+    public string $AccountSID;
 
     /**
      * @OA\Property(
@@ -144,7 +151,7 @@ class Call
 
     /**
      * @OA\Property(
-     *     description="Core UUID of the desired FreeSWITCH instance (an Eqivo extension)",
+     *     description="Core UUID of the desired FreeSWITCH instance (an FiCore extension)",
      *     example="45521fc6-a4b3-42b6-96ad-9136256be216"
      * )
      */
@@ -152,16 +159,16 @@ class Call
 
     /**
      * @OA\Property(
-     *     description="Enables answering machine detection; optionally, it waits until the greeting message has been played back (an Eqivo extension)",
+     *     description="Enables answering machine detection; optionally, it waits until the greeting message has been played back (an FiCore extension)",
      *     example="Enable",
-     *     enum={"Enable", "DetectMessageEnd"},
+     *     enum={CallController::ENABLE, CallController::AMD_MSG_END},
      * )
      */
     public string $MachineDetection;
 
     /**
      * @OA\Property(
-     *     description="When set to `true`, the call flow execution is blocked until answering machine detection is complete (an Eqivo extension)",
+     *     description="When set to `true`, the call flow execution is blocked until answering machine detection is complete (an FiCore extension)",
      *     type="bool",
      *     default=false,
      *     example=true,
@@ -171,68 +178,174 @@ class Call
 
     /**
      * @OA\Property(
-     *     description="HTTP method to be used when answering machine detection is completed (an Eqivo extension)",
+     *     description="HTTP method to be used when answering machine detection is completed (an FiCore extension)",
      *     example="GET",
      *     enum={"POST", "GET"},
-     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_METHOD,
+     *     default=CallController::DEFAULT_AMD_METHOD,
      * )
      */
     public string $AsyncAmdStatusCallbackMethod;
 
     /**
      * @OA\Property(
-     *     description="Fully qualified URL to which the answering machine detection result will be sent. `AnsweredBy` and `MachineDetectionDuration` are appended to the usual [call notification parameters](#/components/schemas/CallNotificationParameters) (an Eqivo extension)",
+     *     description="Fully qualified URL to which the answering machine detection result will be sent. `AnsweredBy` and `MachineDetectionDuration` are appended to the usual [call notification parameters](#/components/schemas/CallNotificationParameters) (an FiCore extension)",
      * )
      */
     public string $AsyncAmdStatusCallback;
 
     /**
      * @OA\Property(
-     *     description="Amount of time (in seconds) allotted for answering machine detection assessment (an Eqivo extension)",
+     *     description="Amount of time (in seconds) allotted for answering machine detection assessment (an FiCore extension)",
      *     type="int",
      *     minimum=3,
      *     maximum=59,
      *     example=5,
-     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_TIMEOUT,
+     *     default=CallController::DEFAULT_AMD_TIMEOUT,
      * )
      */
     public string|int $MachineDetectionTimeout;
 
     /**
      * @OA\Property(
-     *     description="Speech activity/utterance threshold (in milliseconds, an Eqivo extension)",
+     *     description="Speech activity/utterance threshold (in milliseconds, an FiCore extension)",
      *     type="int",
      *     minimum=1000,
      *     maximum=6000,
      *     example=2000,
-     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_SPEECH_THRESHOLD,
+     *     default=CallController::DEFAULT_AMD_SPEECH_THRESHOLD,
      * )
      */
     public string|int $MachineDetectionSpeechThreshold;
 
     /**
      * @OA\Property(
-     *     description="Silence threshold (in milliseconds, an Eqivo extension)",
+     *     description="Silence threshold (in milliseconds, an FiCore extension)",
      *     type="int",
      *     minimum=500,
      *     maximum=5000,
      *     example=1000,
-     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_SILENCE_THRESHOLD,
+     *     default=CallController::DEFAULT_AMD_SILENCE_THRESHOLD,
      * )
      */
     public string|int $MachineDetectionSpeechEndThreshold;
 
     /**
      * @OA\Property(
-     *     description="Initial silence threshold (in milliseconds, an Eqivo extension)",
+     *     description="Initial silence threshold (in milliseconds, an FiCore extension)",
      *     type="int",
      *     minimum=2000,
      *     maximum=10000,
      *     example=3000,
-     *     default=RTCKit\Eqivo\Rest\Controller\V0_1\Call::DEFAULT_AMD_INITIAL_SILENCE,
+     *     default=CallController::DEFAULT_AMD_INITIAL_SILENCE,
      * )
      */
     public string|int $MachineDetectionSilenceTimeout;
 
     public Core $core;
+
+    public string $defaultHttpMethod;
+
+    public function export(): RequestInterface
+    {
+        $request = new Originate\Request();
+        $request->action = Originate\ActionEnum::Regular;
+
+        if (isset($this->core)) {
+            $request->core = $this->core;
+        }
+
+        $request->source = $this->From;
+
+        if (isset($this->CallerName)) {
+            $request->sourceNames = [$this->CallerName];
+        }
+
+        $request->destinations = [$this->To];
+
+        if (isset($this->ExtraDialString)) {
+            $request->extraDialString = $this->ExtraDialString;
+        }
+
+        if (isset($this->HangupOnRing)) {
+            $request->onRingHangup = [(int)$this->HangupOnRing];
+        }
+
+        if (isset($this->MachineDetection)) {
+            if ($this->MachineDetection === CallController::AMD_ENABLE) {
+                $request->amd = true;
+                $request->onAmdMachineHangup = false;
+            } elseif ($this->MachineDetection === CallController::AMD_MSG_END) {
+                $request->amd = true;
+                $request->onAmdMachineHangup = true;
+            }
+        }
+
+        if (isset($request->amd)) {
+            $request->amdAsync = (bool)$this->AsyncAMD;
+
+            if ($request->amdAsync) {
+                if (isset($this->AsyncAmdStatusCallback, $this->AsyncAmdStatusCallbackMethod)) {
+                    $request->onAmdAttn = "{$this->AsyncAmdStatusCallbackMethod}:{$this->AsyncAmdStatusCallback}";
+                }
+            }
+
+            $request->amdTimeout = (int)$this->MachineDetectionTimeout;
+            $request->amdInitialSilenceTimeout = (int)$this->MachineDetectionSilenceTimeout / 1000;
+            $request->amdSilenceThreshold = (int)$this->MachineDetectionSpeechEndThreshold / 1000;
+            $request->amdSpeechThreshold = (int)$this->MachineDetectionSpeechThreshold / 1000;
+        }
+
+        if (isset($this->SendDigits)) {
+            if (isset($this->SendOnPreanswer) && $this->SendOnPreanswer) {
+                $request->onMediaDTMF = [$this->SendDigits];
+            } else {
+                $request->onAnswerDTMF = [$this->SendDigits];
+            }
+        }
+
+        if (isset($this->TimeLimit)) {
+            $request->maxDuration = [(int)$this->TimeLimit];
+        }
+
+        $request->sequence = "{$this->defaultHttpMethod}:{$this->AnswerUrl}";
+
+        if (isset($this->RingUrl)) {
+            $request->onRingAttn = "{$this->defaultHttpMethod}:{$this->RingUrl}";
+        }
+
+        if (isset($this->HangupUrl)) {
+            $request->onHangupAttn = "{$this->defaultHttpMethod}:{$this->HangupUrl}";
+        }
+
+        $gateways = explode(',', $this->Gateways);
+        $gatewayCodecs = !empty($this->GatewayCodecs)
+            ? str_getcsv($this->GatewayCodecs, ',', "'")
+            : [];
+        $gatewayTimeouts = !empty($this->GatewayTimeouts) ? explode(',', $this->GatewayTimeouts) : [];
+        $gatewayRetries = !empty($this->GatewayRetries) ? explode(',', $this->GatewayRetries) : [];
+        $request->gateways = [[]];
+
+        foreach ($gateways as $gwIdx => $gateway) {
+            $gw = new Gateway();
+            $gw->name = $gateway;
+
+            if (!empty($gatewayCodecs[$gwIdx])) {
+                $gw->codecs = $gatewayCodecs[$gwIdx];
+            }
+
+            if (!empty($gatewayTimeouts[$gwIdx])) {
+                $gw->timeout = intval($gatewayTimeouts[$gwIdx]);
+            }
+
+            $gw->tries = empty($gatewayRetries[$gwIdx]) ? 1 : (int)$gatewayRetries[$gwIdx];
+
+            $request->gateways[0][] = $gw;
+        }
+
+        if (isset($this->AccountSID)) {
+            $request->tags['accountsid'] = $this->AccountSID;
+        }
+
+        return $request;
+    }
 }

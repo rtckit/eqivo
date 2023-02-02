@@ -4,9 +4,14 @@
     xmlns="https://getpsalm.org/schema/config"
     xsi:schemaLocation="https://getpsalm.org/schema/config vendor/vimeo/psalm/config.xsd"
     reportMixedIssues="false"
+    findUnusedCode="false"
+    findUnusedBaselineEntry="false"
+    findUnusedVariablesAndParams="false"
+    errorLevel="1"
 >
     <projectFiles>
         <directory name="../src" />
+        <file name="../bin/eqivo" />
         <ignoreFiles>
             <directory name="../vendor" />
         </ignoreFiles>
