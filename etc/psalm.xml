@@ -7,9 +7,11 @@
     findUnusedCode="false"
     findUnusedBaselineEntry="false"
     findUnusedVariablesAndParams="false"
+    errorLevel="1"
 >
     <projectFiles>
         <directory name="../src" />
+        <file name="../bin/eqivo" />
         <ignoreFiles>
             <directory name="../vendor" />
         </ignoreFiles>
