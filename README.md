@@ -7,6 +7,7 @@
 [![CI Status](https://github.com/rtckit/eqivo/workflows/CI/badge.svg)](https://github.com/rtckit/eqivo/actions/workflows/ci.yaml)
 [![Publish Status](https://github.com/rtckit/eqivo/workflows/Publish/badge.svg)](https://github.com/rtckit/eqivo/actions/workflows/publish.yaml)
 [![Psalm Type Coverage](https://shepherd.dev/github/rtckit/eqivo/coverage.svg)](https://shepherd.dev/github/rtckit/eqivo)
+[![Community Chat](https://img.shields.io/badge/zulip-join_chat-brightgreen.svg)](https://rtckit.zulipchat.com/#narrow/stream/414323-eqivo)
 <br />
 [![Latest Stable Version](https://poser.pugx.org/rtckit/eqivo/v/stable.png)](https://packagist.org/packages/rtckit/eqivo)
 [![Docker Pulls](https://img.shields.io/docker/pulls/rtckit/eqivo.svg)](https://hub.docker.com/r/rtckit/eqivo)
@@ -46,8 +47,6 @@ Unit tests are presently lacking. The project itself has been scaffolded against
 
 MIT, see [LICENSE file](LICENSE).
 
-![MIT License](https://raw.github.com/rtckit/media/master/3rd-party/mit.png)
-
 ### Acknowledgments
 
 * [Plivo framework](https://github.com/plivo/plivoframework) - Original framework; Eqivo and its authors are not affiliated with the legacy open source project nor with with the company behind it
@@ -56,6 +55,7 @@ MIT, see [LICENSE file](LICENSE).
 * [FiCore](https://github.com/rtckit/ficore) - FreeSWITCH Integration Core responsible for the bulk of dialplan/call flow logic exposed by Eqivo
 * [Slate](https://github.com/slatedocs/slate) is responsible for rendering the [project's website](https://eqivo.org)
 * [widdershins](https://github.com/Mermade/widdershins) translates the OpenApi spec to Markdown
+* [Zulip](https://zulip.com/) is then open-source modern team chat platform behind our [community chat](https://rtckit.zulipchat.com/#narrow/stream/414323-eqivo)
 
 ### Contributing
 
