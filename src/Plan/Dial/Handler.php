@@ -47,7 +47,7 @@ class Handler implements HandlerInterface
         if (empty($element->numbers)) {
             $this->app->planConsumer->logger->error('Dial Aborted, No Number to dial!');
 
-            return resolve();
+            return resolve(null);
         }
 
         if ($element->timeout > 0) {
@@ -299,7 +299,7 @@ class Handler implements HandlerInterface
                     }
                 }
 
-                return resolve();
+                return resolve(null);
             });
     }
 

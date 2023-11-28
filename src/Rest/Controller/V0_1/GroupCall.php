@@ -86,7 +86,7 @@ class GroupCall implements ControllerInterface
         $response = new GroupCallResponse();
         $inquiry = GroupCallInquiry::factory($request);
 
-        $promise = resolve();
+        $promise = resolve(null);
 
         if (isset($inquiry->ConfirmSound) && filter_var($inquiry->ConfirmSound, FILTER_VALIDATE_URL)) {
             /* Owning to the legacy's framework model, we're instantiating a pseudo Channel to fetch the ConfirmSound RestXML */
@@ -118,7 +118,7 @@ class GroupCall implements ControllerInterface
 
                     $inquiry->confirmMedia = $soundFiles;
 
-                    return resolve();
+                    return resolve(null);
                 });
         }
 

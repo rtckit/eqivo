@@ -40,7 +40,11 @@ class Conference implements ParserInterface
         }
 
         $attributes = $xmlElement->attributes();
-        $element->fqrn = "{$element->room}@{$this->app->config->appPrefix}";
+        $element->fqrn = $element->room;
+
+        if (strpos($element->fqrn, '@') === false) {
+            $element->fqrn = "{$element->room}@{$this->app->config->appPrefix}";
+        }
 
         $mohSound = (isset($attributes->waitSound) && !empty((string)$attributes->waitSound))
             ? $this->app->restServer->config->defaultHttpMethod . ':' . (string)$attributes->waitSound

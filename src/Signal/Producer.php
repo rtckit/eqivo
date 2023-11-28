@@ -85,20 +85,20 @@ class Producer extends AbstractProducer
         $payload = $this->export($signal);
 
         if (!isset($payload) || !isset($signal->attn)) {
-            return resolve();
+            return resolve(null);
         }
 
         $parts = explode(':', $signal->attn, 2);
 
         if (count($parts) !== 2) {
-            return resolve();
+            return resolve(null);
         }
 
         $method = $parts[0];
         $url = $parts[1];
 
         if (empty($method) || empty($url)) {
-            return resolve();
+            return resolve(null);
         }
 
         if (isset($signal->event)) {
@@ -115,12 +115,12 @@ class Producer extends AbstractProducer
             ->then(function () use ($method, $url, $payload): PromiseInterface {
                 $this->logger->info("dial {$method} {$url}", $payload);
 
-                return resolve();
+                return resolve(null);
             })
-            ->otherwise(function (ResponseException $e) use ($method, $url, $payload) {
+            ->catch(function (ResponseException $e) use ($method, $url, $payload) {
                 $this->logger->debug("dial {$method} {$url} failed: " . $e->getMessage(), $payload);
             })
-            ->otherwise(function (Throwable $t) use ($method, $url, $payload) {
+            ->catch(function (Throwable $t) use ($method, $url, $payload) {
                 $t = $t->getPrevious() ?: $t;
                 $data = [
                     'payload' => $payload,

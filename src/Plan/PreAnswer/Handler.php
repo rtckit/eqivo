@@ -46,7 +46,7 @@ class Handler implements HandlerInterface
 
                 $this->app->planConsumer->logger->info('PreAnswer Completed');
 
-                return resolve();
+                return resolve(null);
             });
     }
 }

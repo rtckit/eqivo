@@ -136,9 +136,9 @@ class Dial implements ParserInterface
 
             if (isset($entry->sendDigits[0])) {
                 if ($entry->sendOnPreanswer) {
-                    $optionSendDigits = "api_on_media='uuid_recv_dtmf \${uuid} ${$entry->sendDigits}'";
+                    $optionSendDigits = "api_on_media='uuid_recv_dtmf \${uuid} {$entry->sendDigits}'";
                 } else {
-                    $optionSendDigits = "api_on_answer_2='uuid_recv_dtmf \${uuid} ${$entry->sendDigits}'";
+                    $optionSendDigits = "api_on_answer_2='uuid_recv_dtmf \${uuid} {$entry->sendDigits}'";
                 }
             }
 
@@ -227,6 +227,7 @@ class Dial implements ParserInterface
         return all($promises)
             ->then(function (array $playbackArray) use ($element) {
                 if (!empty($playbackArray['confirmSounds'])) {
+                    /** @phpstan-ignore-next-line */
                     $element->confirmSounds = $playbackArray['confirmSounds'];
                 }
 
