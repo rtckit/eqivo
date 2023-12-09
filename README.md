@@ -55,7 +55,6 @@ MIT, see [LICENSE file](LICENSE).
 * [FiCore](https://github.com/rtckit/ficore) - FreeSWITCH Integration Core responsible for the bulk of dialplan/call flow logic exposed by Eqivo
 * [Slate](https://github.com/slatedocs/slate) is responsible for rendering the [project's website](https://eqivo.org)
 * [widdershins](https://github.com/Mermade/widdershins) translates the OpenApi spec to Markdown
-* [Zulip](https://zulip.com/) is then open-source modern team chat platform behind our [community chat](https://rtckit.zulipchat.com/#narrow/stream/414323-eqivo)
 
 ### Contributing
 
