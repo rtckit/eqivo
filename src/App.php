@@ -13,7 +13,7 @@ use RTCKit\FiCore\{
 
 class App extends AbstractApp
 {
-    public const VERSION = '0.6.0';
+    public const VERSION = '0.6.1';
 
     public HttpClientInterface $httpClient;
 

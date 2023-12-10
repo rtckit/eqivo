@@ -99,6 +99,7 @@ class HangupCall implements ControllerInterface
 
             $inquiry->channel = $channel;
         } else {
+            /** @phpstan-ignore-next-line */
             assert(is_string($inquiry->RequestUUID));
 
             $job = $this->app->getOriginateJob($inquiry->RequestUUID);

@@ -99,6 +99,7 @@ class ScheduleHangup implements ControllerInterface
             return;
         }
 
+        /** @phpstan-ignore-next-line */
         assert(is_string($inquiry->CallUUID));
 
         $channel = $this->app->getChannel($inquiry->CallUUID);

@@ -193,7 +193,7 @@ class Producer extends AbstractProducer
 
                 return $this->parseElements($restXml, $channel);
             })
-            ->otherwise(function (\Throwable $t) {
+            ->catch(function (\Throwable $t) {
                 $t = $t->getPrevious() ?: $t;
 
                 $this->logger->error('Processing RESTXML failure: ' . $t->getMessage(), [

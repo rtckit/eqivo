@@ -61,7 +61,7 @@ trait AuthenticatedTrait
                         return $this->view->execute($response);
                     });
             })
-            ->otherwise($this->exceptionHandler(...));
+            ->catch($this->exceptionHandler(...));
     }
 
     /**
@@ -72,7 +72,10 @@ trait AuthenticatedTrait
      */
     public function validate(AbstractInquiry $inquiry, AbstractResponse $response): void
     {
+        /** @phpstan-ignore-next-line */
         assert($inquiry instanceof AbstractInquiry);
+
+        /** @phpstan-ignore-next-line */
         assert($response instanceof AbstractResponse);
     }
 
@@ -118,7 +121,7 @@ trait AuthenticatedTrait
             ($id === $this->app->restServer->config->restAuthId) &&
             ($token === $this->app->restServer->config->restAuthToken)
         ) {
-            return resolve();
+            return resolve(null);
         } else {
             return reject(new AuthException('Invalid credentials'));
         }
@@ -130,7 +133,7 @@ trait AuthenticatedTrait
             return reject(new AuthException('IP Auth Failed'));
         }
 
-        return resolve();
+        return resolve(null);
     }
 
     protected function exceptionHandler(Throwable $t): PromiseInterface

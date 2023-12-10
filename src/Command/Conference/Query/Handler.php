@@ -28,7 +28,7 @@ class Handler extends AbstractHandler
         $response = new Response();
         $response->successful = true;
 
-        if ($request->action !== ActionEnum::Members) {
+        if (isset($request->action)) {
             $response->successful = false;
 
             return resolve($response);
@@ -53,7 +53,7 @@ class Handler extends AbstractHandler
 
                         $response->successful = false;
 
-                        return resolve();
+                        return resolve(null);
                     }
 
                     $xml = simplexml_load_string($body);
@@ -63,13 +63,13 @@ class Handler extends AbstractHandler
 
                         $response->successful = false;
 
-                        return resolve();
+                        return resolve(null);
                     }
 
                     $response->rooms = array_merge($response->rooms, $this->parseXmlList($core, $xml, $request->members, $request->channels, $request->muted, $request->deaf));
                     $this->app->commandConsumer->logger->debug('Conference List Done for ' . $core->uuid);
 
-                    return resolve();
+                    return resolve(null);
                 });
         }
 

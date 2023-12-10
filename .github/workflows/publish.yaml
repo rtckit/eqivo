@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v2
       - uses: shivammathur/setup-php@v2
         with:
-          php-version: 8.1
+          php-version: 8.3
       - run: curl -OL https://clue.engineering/phar-composer-latest.phar
       - run: chmod +x phar-composer-latest.phar
       - run: composer install --no-dev
@@ -37,7 +37,7 @@ jobs:
           file: etc/Dockerfile
           push: true
           tags: rtckit/eqivo:${{ github.ref_name }}-full
-      - run: curl -OL https://downloads.dockerslim.com/releases/1.37.6/dist_linux.tar.gz
+      - run: curl -OL https://downloads.dockerslim.com/releases/1.40.6/dist_linux.tar.gz
       - run: tar zfvx dist_linux.tar.gz
       - run: ./dist_linux/docker-slim build --http-probe-off --continue-after 1 --include-cert-all --include-exe=/usr/local/bin/eqivo --include-exe=/usr/local/bin/php --target rtckit/eqivo:${{ github.ref_name }}-full --tag rtckit/eqivo:${{ github.ref_name }}
       - run: docker push rtckit/eqivo:${{ github.ref_name }}
