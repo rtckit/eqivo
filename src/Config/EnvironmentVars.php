@@ -15,6 +15,7 @@ use RTCKit\FiCore\Config\{
 
 class EnvironmentVars implements ResolverInterface
 {
+    /** @var string */
     public const PREFIX = 'EQIVO_';
 
     public function resolve(AbstractSet $config): void

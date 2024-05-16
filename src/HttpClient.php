@@ -22,6 +22,7 @@ class HttpClient implements HttpClientInterface
 
     protected string $signatureHeader;
 
+    /** @var int */
     public const TIMEOUT = 60;
 
     public function setApp(App $app): static

@@ -29,12 +29,16 @@ class Dial implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Dial';
 
+    /** @var bool */
     public const NO_ANSWER = true;
 
+    /** @var list<string> */
     public const NESTABLES = ['Number'];
 
+    /** @var int */
     public const DEFAULT_TIMELIMIT = 14400;
 
+    /** @var int */
     public const DEFAULT_TIMEOUT = -1;
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface
