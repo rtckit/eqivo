@@ -24,6 +24,7 @@ jobs:
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
+          file_glob: true
           file: eqivo.phar*
           tag: ${{ github.ref }}
           prerelease: true
