@@ -20,8 +20,10 @@ class Speak implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Speak';
 
+    /** @var int */
     public const MAX_LOOPS = 10000;
 
+    /** @var list<string> */
     public const METHODS = [
         'N/A',
         'PRONOUNCED',
@@ -30,6 +32,7 @@ class Speak implements ParserInterface
         'PRONOUNCED_YEAR'
     ];
 
+    /** @var list<string> */
     public const TYPES = [
         'NUMBER',
         'ITEMS',

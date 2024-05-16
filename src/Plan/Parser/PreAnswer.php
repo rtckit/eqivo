@@ -18,8 +18,10 @@ class PreAnswer implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'PreAnswer';
 
+    /** @var bool */
     public const NO_ANSWER = true;
 
+    /** @var list<string> */
     public const NESTABLES = [
         'GetDigits',
         'GetSpeech',

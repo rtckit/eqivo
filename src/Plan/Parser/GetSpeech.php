@@ -24,8 +24,10 @@ class GetSpeech implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'GetSpeech';
 
+    /** @var list<string> */
     public const NESTABLES = ['Speak', 'Play', 'Wait'];
 
+    /** @var int */
     public const DEFAULT_TIMEOUT = 5;
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface

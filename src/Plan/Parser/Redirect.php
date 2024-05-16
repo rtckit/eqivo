@@ -23,6 +23,7 @@ class Redirect implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Redirect';
 
+    /** @var bool */
     public const NO_ANSWER = true;
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface
