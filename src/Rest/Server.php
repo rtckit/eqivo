@@ -100,7 +100,7 @@ class Server extends AbstractServer
         if (!isset($this->config->restServerAdvertisedHost)) {
             $hostname = gethostname();
 
-            if (!$hostname) {
+            if ($hostname === false || !strlen($hostname)) {
                 $this->config->restServerAdvertisedHost = $this->config->appPrefix;
             } else {
                 $this->config->restServerAdvertisedHost = $hostname;

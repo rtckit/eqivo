@@ -101,7 +101,7 @@ trait AuthenticatedTrait
 
                 $decoded = base64_decode($parts[1], true);
 
-                if (!$decoded) {
+                if ($decoded === false) {
                     return reject(new AuthException('Cannot decode authentication payload'));
                 }
 

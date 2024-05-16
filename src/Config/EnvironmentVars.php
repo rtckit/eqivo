@@ -96,7 +96,7 @@ class EnvironmentVars implements ResolverInterface
         if (isset($env[self::PREFIX . 'REST_BIND_ADDRESS'])) {
             $err = Set::parseSocketAddr($env[self::PREFIX . 'REST_BIND_ADDRESS'], $ip, $port);
 
-            if ($err) {
+            if (is_string($err)) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'REST_BIND_ADDRESS environment variable' . PHP_EOL);
                 fwrite(STDERR, $err . PHP_EOL);
             } else {
@@ -173,7 +173,7 @@ class EnvironmentVars implements ResolverInterface
         if (isset($env[self::PREFIX . 'OUTBOUND_BIND_ADDRESS'])) {
             $err = Set::parseSocketAddr($env[self::PREFIX . 'OUTBOUND_BIND_ADDRESS'], $ip, $port);
 
-            if ($err) {
+            if (is_string($err)) {
                 fwrite(STDERR, 'Malformed ' . self::PREFIX . 'OUTBOUND_BIND_ADDRESS environment variable' . PHP_EOL);
                 fwrite(STDERR, $err . PHP_EOL);
             } else {
@@ -191,7 +191,7 @@ class EnvironmentVars implements ResolverInterface
             } else {
                 $err = Set::parseSocketAddr($env[self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS'], $ip, $port);
 
-                if ($err) {
+                if (is_string($err)) {
                     fwrite(STDERR, 'Malformed ' . self::PREFIX . 'OUTBOUND_ADVERTISED_ADDRESS environment variable' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {
