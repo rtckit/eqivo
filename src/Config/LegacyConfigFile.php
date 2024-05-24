@@ -102,7 +102,7 @@ class LegacyConfigFile implements ResolverInterface
             if (isset($legacy['rest_server']['HTTP_ADDRESS']) && is_string($legacy['rest_server']['HTTP_ADDRESS'])) {
                 $err = Set::parseSocketAddr($legacy['rest_server']['HTTP_ADDRESS'], $ip, $port);
 
-                if ($err) {
+                if (is_string($err)) {
                     fwrite(STDERR, 'Malformed HTTP_ADDRESS (rest_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {
@@ -117,7 +117,7 @@ class LegacyConfigFile implements ResolverInterface
             if (isset($legacy['rest_server']['FS_INBOUND_ADDRESS']) && is_string($legacy['rest_server']['FS_INBOUND_ADDRESS'])) {
                 $err = Set::parseHostPort($legacy['rest_server']['FS_INBOUND_ADDRESS'], $host, $port);
 
-                if ($err) {
+                if (is_string($err)) {
                     fwrite(STDERR, 'Malformed FS_INBOUND_ADDRESS (rest_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {
@@ -182,7 +182,7 @@ class LegacyConfigFile implements ResolverInterface
             if (isset($legacy['outbound_server']['FS_OUTBOUND_ADDRESS']) && is_string($legacy['outbound_server']['FS_OUTBOUND_ADDRESS'])) {
                 $err = Set::parseSocketAddr($legacy['outbound_server']['FS_OUTBOUND_ADDRESS'], $ip, $port);
 
-                if ($err) {
+                if (is_string($err)) {
                     fwrite(STDERR, 'Malformed FS_OUTBOUND_ADDRESS (outbound_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {

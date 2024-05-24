@@ -38,6 +38,7 @@ class Handler implements HandlerInterface
 {
     use HandlerTrait;
 
+    /** @var int */
     public const EVENT_TIMEOUT = 30;
 
     public function execute(Channel $channel, AbstractElement $element): PromiseInterface

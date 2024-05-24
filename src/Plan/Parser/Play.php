@@ -20,6 +20,7 @@ class Play implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Play';
 
+    /** @var int */
     public const MAX_LOOPS = 10000;
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface

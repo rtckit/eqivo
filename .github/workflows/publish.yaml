@@ -19,11 +19,13 @@ jobs:
       - run: chmod +x phar-composer-latest.phar
       - run: composer install --no-dev
       - run: ./phar-composer-latest.phar build .
+      - run: echo "${{ secrets.SIGNING_GPG_PRIVATE_KEY }}" | gpg --import --no-tty --batch --yes
+      - run: echo "${{ secrets.SIGNING_GPG_PASSPHRASE }}" | gpg --command-fd 0 --passphrase-fd 0 --pinentry-mode loopback -u 8636CB4D9CC1CD41EFC1EDC315ECDC2092AA50C1 --batch --detach-sign --armor --output eqivo.phar.asc eqivo.phar
       - uses: svenstaro/upload-release-action@v2
         with:
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          file: eqivo.phar
-          asset_name: eqivo.phar
+          file_glob: true
+          file: eqivo.phar*
           tag: ${{ github.ref }}
           prerelease: true
           overwrite: true

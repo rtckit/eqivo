@@ -22,6 +22,7 @@ class HttpClient implements HttpClientInterface
 
     protected string $signatureHeader;
 
+    /** @var int */
     public const TIMEOUT = 60;
 
     public function setApp(App $app): static
@@ -63,7 +64,7 @@ class HttpClient implements HttpClientInterface
             throw new HttpClientException("Cannot send {$url}, cannot parse url");
         }
 
-        if (!empty($parsed['query'])) {
+        if (isset($parsed['query']) && strlen($parsed['query'])) {
             parse_str($parsed['query'], $extra);
             $params = array_merge($params, $extra);
         }

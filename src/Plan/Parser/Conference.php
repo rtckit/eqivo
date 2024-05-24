@@ -20,12 +20,16 @@ class Conference implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Conference';
 
+    /** @var int */
     public const DEFAULT_TIMELIMIT = 0;
 
+    /** @var int */
     public const DEFAULT_MAXMEMBERS = 200;
 
+    /** @var list<string> */
     public const RECORD_FILE_FORMATS = ['wav', 'mp3'];
 
+    /** @var list<string> */
     public const ALLOWED_METHODS = ['GET', 'POST'];
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface

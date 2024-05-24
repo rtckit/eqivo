@@ -21,8 +21,10 @@ class SipTransfer implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'SIPTransfer';
 
+    /** @var bool */
     public const NO_ANSWER = true;
 
+    /** @var list<string> */
     public const ALLOWED_SCHEMES = ['sip', 'sips'];
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface

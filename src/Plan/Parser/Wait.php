@@ -20,6 +20,7 @@ class Wait implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Wait';
 
+    /** @var bool */
     public const NO_ANSWER = true;
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface

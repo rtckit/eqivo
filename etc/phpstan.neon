@@ -1,6 +1,6 @@
 includes:
     - ../vendor/phpstan/phpstan/conf/bleedingEdge.neon
 parameters:
-    checkGenericClassInNonGenericObjectType: false
     ignoreErrors:
+        - identifier: missingType.generics
         - '#Parameter \#1 \$onFulfilled of method React\\Promise\\PromiseInterface<mixed>::then\(\) expects \(callable\(mixed\):#'

@@ -284,25 +284,35 @@ class GroupCall extends AbstractInquiry
             /** @psalm-suppress PropertyTypeCoercion */
             $request->gateways[$destIdx] = [];
             $gateways = explode(',', $destGateways);
-            $gatewayCodecs = !empty($this->gwCodecsList[$destIdx])
+            $gatewayCodecs =
+                (isset($this->gwCodecsList[$destIdx]) && strlen($this->gwCodecsList[$destIdx]))
                 ? str_getcsv($this->gwCodecsList[$destIdx], ',', "'")
                 : [];
-            $gatewayTimeouts = !empty($this->gwTimeoutsList[$destIdx]) ? explode(',', $this->gwTimeoutsList[$destIdx]) : [];
-            $gatewayRetries = !empty($this->gwRetriesList[$destIdx]) ? explode(',', $this->gwRetriesList[$destIdx]) : [];
+            $gatewayTimeouts =
+                (isset($this->gwTimeoutsList[$destIdx]) && strlen($this->gwTimeoutsList[$destIdx]))
+                ? explode(',', $this->gwTimeoutsList[$destIdx])
+                : [];
+            $gatewayRetries =
+                (isset($this->gwRetriesList[$destIdx]) && strlen($this->gwRetriesList[$destIdx]))
+                ? explode(',', $this->gwRetriesList[$destIdx])
+                : [];
 
             foreach ($gateways as $gwIdx => $gateway) {
                 $gw = new Gateway();
                 $gw->name = $gateway;
 
-                if (!empty($gatewayCodecs[$gwIdx])) {
+                if (isset($gatewayCodecs[$gwIdx]) && strlen($gatewayCodecs[$gwIdx])) {
                     $gw->codecs = $gatewayCodecs[$gwIdx];
                 }
 
-                if (!empty($gatewayTimeouts[$gwIdx])) {
+                if (isset($gatewayTimeouts[$gwIdx]) && strlen($gatewayTimeouts[$gwIdx])) {
                     $gw->timeout = intval($gatewayTimeouts[$gwIdx]);
                 }
 
-                $gw->tries = empty($gatewayRetries[$gwIdx]) ? 1 : (int)$gatewayRetries[$gwIdx];
+                $gw->tries =
+                    (isset($gatewayRetries[$gwIdx]) && strlen($gatewayRetries[$gwIdx]))
+                    ? (int)$gatewayRetries[$gwIdx]
+                    : 1;
 
                 /** @psalm-suppress PropertyTypeCoercion */
                 $request->gateways[$destIdx][] = $gw;

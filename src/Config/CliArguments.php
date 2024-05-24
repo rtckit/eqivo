@@ -67,7 +67,7 @@ class CliArguments implements ResolverInterface
             $configFile = $args['c'];
         }
 
-        if ($configFile) {
+        if (is_string($configFile)) {
             switch (pathinfo($configFile, PATHINFO_EXTENSION)) {
                 case 'json':
                 case 'yml':
@@ -168,7 +168,7 @@ class CliArguments implements ResolverInterface
         if (isset($args['rest-bind-address']) && is_string($args['rest-bind-address'])) {
             $err = Set::parseSocketAddr($args['rest-bind-address'], $ip, $port);
 
-            if ($err) {
+            if (is_string($err)) {
                 fwrite(STDERR, 'Malformed --rest-bind-address argument: ip:port required' . PHP_EOL);
                 fwrite(STDERR, $err . PHP_EOL);
             } else {
@@ -245,7 +245,7 @@ class CliArguments implements ResolverInterface
         if (isset($args['outbound-bind-address']) && is_string($args['outbound-bind-address'])) {
             $err = Set::parseSocketAddr($args['outbound-bind-address'], $ip, $port);
 
-            if ($err) {
+            if (is_string($err)) {
                 fwrite(STDERR, 'Malformed --outbound-bind-address argument: ip:port required' . PHP_EOL);
                 fwrite(STDERR, $err . PHP_EOL);
             } else {
@@ -263,7 +263,7 @@ class CliArguments implements ResolverInterface
             } else {
                 $err = Set::parseSocketAddr($args['outbound-advertised-address'], $ip, $port);
 
-                if ($err) {
+                if (is_string($err)) {
                     fwrite(STDERR, 'Malformed --outbound-advertised-address argument: ip:port or `inbound_socket_address` required' . PHP_EOL);
                     fwrite(STDERR, $err . PHP_EOL);
                 } else {
@@ -313,7 +313,7 @@ class CliArguments implements ResolverInterface
 
     protected function help(): never
     {
-        $cmd = !isset($_SERVER['argv']) || !is_array($_SERVER['argv']) || empty($_SERVER['argv'][0])
+        $cmd = !isset($_SERVER['argv']) || !is_array($_SERVER['argv']) || !is_string($_SERVER['argv'][0]) || !strlen($_SERVER['argv'][0])
             ? './bin/ficore'
             : $_SERVER['argv'][0];
 

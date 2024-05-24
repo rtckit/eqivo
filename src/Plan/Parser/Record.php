@@ -20,10 +20,13 @@ class Record implements ParserInterface
     /** @var string */
     public const ELEMENT_TYPE = 'Record';
 
+    /** @var list<string> */
     public const RECORD_FILE_FORMATS = ['wav', 'mp3'];
 
+    /** @var string */
     public const DEFAULT_RECORD_FORMAT = 'mp3';
 
+    /** @var list<string> */
     public const ALLOWED_METHODS = ['GET', 'POST'];
 
     public function parse(RestXmlElement $xmlElement, Channel $channel): PromiseInterface
