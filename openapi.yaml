@@ -136,6 +136,28 @@ paths:
       security:
         -
           basicAuth: []
+  /v0.1/ConferenceHold/:
+    post:
+      tags:
+        - Conference
+      summary: /v0.1/ConferenceHold/
+      description: 'Put one or more conference members on hold'
+      requestBody:
+        description: 'POST parameters'
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConferenceHoldParameters'
+      responses:
+        '200':
+          description: Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConferenceHoldResponse'
+      security:
+        -
+          basicAuth: []
   /v0.1/ConferenceKick/:
     post:
       tags:
@@ -331,6 +353,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConferenceUndeafResponse'
+      security:
+        -
+          basicAuth: []
+  /v0.1/ConferenceUnhold/:
+    post:
+      tags:
+        - Conference
+      summary: /v0.1/ConferenceUnhold/
+      description: 'Resume one or more members in the conference context'
+      requestBody:
+        description: 'POST parameters'
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/ConferenceUnholdParameters'
+      responses:
+        '200':
+          description: Response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConferenceUnholdResponse'
       security:
         -
           basicAuth: []
@@ -901,6 +945,25 @@ components:
           type: string
           example: '13,42'
       type: object
+    ConferenceHoldParameters:
+      required:
+        - ConferenceName
+        - FilePath
+        - MemberID
+      properties:
+        ConferenceName:
+          description: 'Name of the conference in question'
+          type: string
+          example: Room402
+        FilePath:
+          description: 'Path/URI of the media file to be played as music-on-hold'
+          type: string
+          example: /var/local/media/sample.wav
+        MemberID:
+          description: 'List of comma separated member IDs to be affected; `all` shorthand is available however it is not capable of playing back the music-on-hold (i.e. use specific member IDs when MOH is necessary)'
+          type: string
+          example: '13,42'
+      type: object
     ConferenceKickParameters:
       required:
         - ConferenceName
@@ -1067,6 +1130,20 @@ components:
           example: Room402
         MemberID:
           description: 'List of comma separated member IDs to be affected; `all` shorthand is available too.'
+          type: string
+          example: '13,42'
+      type: object
+    ConferenceUnholdParameters:
+      required:
+        - ConferenceName
+        - MemberID
+      properties:
+        ConferenceName:
+          description: 'Name of the conference in question'
+          type: string
+          example: Room402
+        MemberID:
+          description: 'List of comma separated member IDs to be affected; `all` shorthand is available too but it is not capable of stopping the music-oh-hold.'
           type: string
           example: '13,42'
       type: object
@@ -1606,6 +1683,33 @@ components:
           type: boolean
           example: true
       type: object
+    ConferenceHoldResponse:
+      required:
+        - Message
+        - Success
+      properties:
+        Message:
+          description: 'Response message'
+          type: string
+          enum:
+            - 'Conference Hold Executed'
+            - 'ConferenceName Parameter must be present'
+            - 'MemberID Parameter must be present'
+            - 'Conference Hold Failed -- Conference not found'
+          example: 'Conference Hold Executed'
+        Members:
+          description: 'List of affected members'
+          type: array
+          items:
+            type: string
+          example:
+            - '13'
+            - '42'
+        Success:
+          description: 'Whether the request was successful or not'
+          type: boolean
+          example: true
+      type: object
     ConferenceKickResponse:
       required:
         - Message
@@ -1851,6 +1955,33 @@ components:
             - 'MemberID Parameter must be present'
             - 'Conference Undeaf Failed -- Conference not found'
           example: 'Conference Undeaf Executed'
+        Members:
+          description: 'List of affected members'
+          type: array
+          items:
+            type: string
+          example:
+            - '13'
+            - '42'
+        Success:
+          description: 'Whether the request was successful or not'
+          type: boolean
+          example: true
+      type: object
+    ConferenceUnholdResponse:
+      required:
+        - Message
+        - Success
+      properties:
+        Message:
+          description: 'Response message'
+          type: string
+          enum:
+            - 'Conference Unhold Executed'
+            - 'ConferenceName Parameter must be present'
+            - 'MemberID Parameter must be present'
+            - 'Conference Unhold Failed -- Conference not found'
+          example: 'Conference Unhold Executed'
         Members:
           description: 'List of affected members'
           type: array
