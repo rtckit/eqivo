@@ -231,7 +231,6 @@ class Dial implements ParserInterface
         return all($promises)
             ->then(function (array $playbackArray) use ($element) {
                 if (!empty($playbackArray['confirmSounds'])) {
-                    /** @phpstan-ignore-next-line */
                     $element->confirmSounds = $playbackArray['confirmSounds'];
                 }
 
