@@ -42,7 +42,7 @@
         "rtckit/ficore": "0.0.4",
         "rtckit/sip": "^0.7",
         "symfony/yaml": "^6.3",
-        "wikimedia/ip-set": "^4.0"
+        "wikimedia/ip-utils": "^5.0"
     },
     "require-dev": {
         "phpstan/phpstan": "^1.10",
