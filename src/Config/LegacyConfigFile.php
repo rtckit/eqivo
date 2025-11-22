@@ -215,14 +215,14 @@ class LegacyConfigFile implements ResolverInterface
             }
 
             if (!isset($config->userName) && isset($legacy['rest_server'])) {
-                if (is_array($legacy['rest_server'])) {
-                    $config->userName = TypeHelper::toString($legacy['rest_server']['USER'] ?? null);
+                if (is_array($legacy['rest_server']) && isset($legacy['rest_server']['USER'])) {
+                    $config->userName = TypeHelper::toString($legacy['rest_server']['USER']);
                 }
             }
 
             if (!isset($config->groupName) && isset($legacy['rest_server'])) {
-                if (is_array($legacy['rest_server'])) {
-                    $config->groupName = TypeHelper::toString($legacy['rest_server']['GROUP'] ?? null);
+                if (is_array($legacy['rest_server']) && isset($legacy['rest_server']['GROUP'])) {
+                    $config->groupName = TypeHelper::toString($legacy['rest_server']['GROUP']);
                 }
             }
         }
