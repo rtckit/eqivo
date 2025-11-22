@@ -21,6 +21,7 @@ use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\ConferenceRecordStart as ConferenceRecordStartResponse;
 
 use RTCKit\Eqivo\Rest\View\V0_1\ConferenceRecordStart as ConferenceRecordStartView;
+use RTCKit\Eqivo\TypeHelper;
 
 /**
  * @OA\Post(
@@ -88,10 +89,14 @@ class ConferenceRecordStart implements ControllerInterface
         }
 
         if (!isset($inquiry->FileFormat)) {
+            /** @phpstan-ignore assign.propertyType */
             $inquiry->FileFormat = static::DEFAULT_RECORD_FORMAT;
         } else {
-            if (!in_array($inquiry->FileFormat, static::RECORD_FILE_FORMATS)) {
-                $response->Message = ConferenceRecordStartResponse::MESSAGE_BAD_FILE_FORMAT . " '" . implode("', '", static::RECORD_FILE_FORMATS) . "'";
+            $fileFormat = TypeHelper::toString($inquiry->FileFormat);
+            $inquiry->FileFormat = $fileFormat;
+            $formats = static::RECORD_FILE_FORMATS;
+            if (is_array($formats) && !in_array($fileFormat, $formats, true)) {
+                $response->Message = ConferenceRecordStartResponse::MESSAGE_BAD_FILE_FORMAT . " '" . implode("', '", $formats) . "'";
                 $response->Success = false;
 
                 return;

@@ -16,6 +16,7 @@ use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\SendDigits as SendDigitsResponse;
 
 use RTCKit\Eqivo\Rest\View\V0_1\SendDigits as SendDigitsView;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\Eqivo\{
     AbstractApp,
     HangupCauseEnum
@@ -92,14 +93,18 @@ class SendDigits implements ControllerInterface
         }
 
         if (!isset($inquiry->Leg)) {
+            /** @phpstan-ignore assign.propertyType */
             $inquiry->Leg = static::DEFAULT_LEG;
-        } else {
-            if (!in_array($inquiry->Leg, ['aleg', 'bleg'])) {
-                $response->Message = SendDigitsResponse::MESSAGE_INVALID_LEG;
-                $response->Success = false;
+        }
 
-                return;
-            }
+        $leg = TypeHelper::toString($inquiry->Leg);
+        $inquiry->Leg = $leg;
+
+        if (!in_array($leg, ['aleg', 'bleg'], true)) {
+            $response->Message = SendDigitsResponse::MESSAGE_INVALID_LEG;
+            $response->Success = false;
+
+            return;
         }
 
         $channel = $this->app->getChannel($inquiry->CallUUID);

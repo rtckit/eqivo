@@ -120,6 +120,7 @@ class Producer extends AbstractProducer
 
         $channel->payload['CallStatus'] = isset($channel->status) ? $channel->status->value : null;
 
+        /** @var array<string, mixed> */
         return $channel->payload;
     }
 
@@ -232,8 +233,6 @@ class Producer extends AbstractProducer
                     }
                 }
             }
-
-            assert($restXmlElement instanceof RestXmlElement);
 
             $element = $parser->parse($restXmlElement, $channel);
             $sequence[] = $element;

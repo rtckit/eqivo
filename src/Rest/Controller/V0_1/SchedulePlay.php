@@ -22,6 +22,7 @@ use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\SchedulePlay as SchedulePlayResponse;
 
 use RTCKit\Eqivo\Rest\View\V0_1\SchedulePlay as SchedulePlayView;
+use RTCKit\Eqivo\TypeHelper;
 
 /**
  * @OA\Post(
@@ -116,21 +117,20 @@ class SchedulePlay implements ControllerInterface
             return;
         }
 
-        $inquiry->Legs ??= static::DEFAULT_LEG;
+        $inquiry->Legs = TypeHelper::toString($inquiry->Legs ?? static::DEFAULT_LEG);
 
-        if (!in_array($inquiry->Legs, ['aleg', 'bleg', 'both'])) {
+        if (!in_array($inquiry->Legs, ['aleg', 'bleg', 'both'], true)) {
             $response->Message = SchedulePlayResponse::MESSAGE_INVALID_LEG;
             $response->Success = false;
 
             return;
         }
 
-        if (!isset($inquiry->Length)) {
-            $inquiry->Length = static::DEFAULT_LENGTH;
-        } else {
-            $inquiry->Length = (int)$inquiry->Length;
+        if (isset($inquiry->Length)) {
+            $length = TypeHelper::toInt($inquiry->Length);
+            $inquiry->Length = $length;
 
-            if ($inquiry->Length < 1) {
+            if ($length < 1) {
                 $response->Message = SchedulePlayResponse::MESSAGE_INVALID_LENGTH;
                 $response->Success = false;
 
@@ -138,10 +138,11 @@ class SchedulePlay implements ControllerInterface
             }
         }
 
-        $inquiry->delimiter ??= static::DEFAULT_DELIMITER;
-        $inquiry->soundList = explode($inquiry->delimiter, $inquiry->Sounds);
+        $inquiry->delimiter = TypeHelper::toString($inquiry->delimiter ?? static::DEFAULT_DELIMITER);
+        $delimiterStr = $inquiry->delimiter !== '' ? $inquiry->delimiter : ',';
+        $inquiry->soundList = explode($delimiterStr, $inquiry->Sounds);
 
-        if (!isset($inquiry->soundList[0])) {
+        if (empty($inquiry->Sounds)) {
             $response->Message = SchedulePlayResponse::MESSAGE_INVALID_SOUNDS;
             $response->Success = false;
         }

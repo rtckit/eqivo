@@ -22,6 +22,7 @@ abstract class AbstractInquiry
          * Not really a concern as the constructor is declared `final`
          *
          * @psalm-suppress UnsafeInstantiation
+         * @phpstan-ignore new.staticInAbstractClassStaticMethod
          */
         $ret = new static();
         $params = $request->getParsedBody();

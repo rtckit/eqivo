@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RTCKit\Eqivo\Switch\ESL\Event;
 
 use RTCKit\Eqivo\Signal\Channel as ChannelSignal;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\Switch\ESL\Event\{
     HandlerInterface,
     HandlerTrait,
@@ -34,7 +35,7 @@ class CallUpdate implements HandlerInterface
                 return;
             }
 
-            $aLegUuid = $event->{'Bridged-To'};
+            $aLegUuid = TypeHelper::toString($event->{'Bridged-To'});
             $channel = $core->getChannel($aLegUuid);
 
             if (!isset($channel)) {
@@ -58,9 +59,9 @@ class CallUpdate implements HandlerInterface
             }
 
             $bridgeSignal = new ChannelSignal\Bridge();
-            $bridgeSignal->attn = $event->{$signalAttnVar};
+            $bridgeSignal->attn = TypeHelper::toString($event->{$signalAttnVar});
             $bridgeSignal->channel = $channel;
-            $bridgeSignal->bridged = $bLegUuid;
+            $bridgeSignal->bridged = TypeHelper::toString($bLegUuid);
             $bridgeSignal->status = StatusEnum::Answer;
 
             $this->app->signalProducer->produce($bridgeSignal);

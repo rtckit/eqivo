@@ -16,6 +16,7 @@ use RTCKit\Eqivo\Plan\Dial\{
 };
 use RTCKit\Eqivo\Plan\Producer;
 use RTCKit\Eqivo\Plan\RestXmlElement;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\Plan\Playback\Element as PlaybackElement;
 use RTCKit\FiCore\Plan\Silence\Element as SilenceElement;
 use RTCKit\FiCore\Plan\Speak\Element as SpeakElement;
@@ -231,11 +232,17 @@ class Dial implements ParserInterface
         return all($promises)
             ->then(function (array $playbackArray) use ($element) {
                 if (!empty($playbackArray['confirmSounds'])) {
-                    $element->confirmSounds = $playbackArray['confirmSounds'];
+                    $confirmSoundsArray = TypeHelper::toStringList($playbackArray['confirmSounds']);
+                    if ($confirmSoundsArray !== []) {
+                        $element->confirmSounds = $confirmSoundsArray;
+                    }
                 }
 
                 if (!empty($playbackArray['dialMusic'])) {
-                    $element->dialMusic = $playbackArray['dialMusic'];
+                    $dialMusicArray = TypeHelper::toStringList($playbackArray['dialMusic']);
+                    if ($dialMusicArray !== []) {
+                        $element->dialMusic = $dialMusicArray;
+                    }
                 }
 
                 return $element;

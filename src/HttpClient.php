@@ -13,6 +13,7 @@ use RTCKit\Eqivo\Exception\{
     HttpClientException,
     MethodNotAllowedException
 };
+use RTCKit\Eqivo\TypeHelper;
 
 class HttpClient implements HttpClientInterface
 {
@@ -153,10 +154,11 @@ class HttpClient implements HttpClientInterface
             ksort($params);
 
             foreach ($params as $key => $value) {
-                $str .= $key . $value;
+                $str .= TypeHelper::toString($key) . TypeHelper::toString($value);
             }
 
-            return base64_encode(hash_hmac('sha1', $str, $this->app->config->restAuthToken, true));
+            $key = TypeHelper::toString($this->app->config->restAuthToken);
+            return base64_encode(hash_hmac('sha1', $str, $key, true));
         }
 
         return '';

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RTCKit\Eqivo\Signal\Handler\Channel;
 
 use RTCKit\Eqivo\Signal\Handler\AbstractHandler;
+use RTCKit\Eqivo\TypeHelper;
 
 use RTCKit\FiCore\Signal\AbstractSignal;
 use RTCKit\FiCore\Signal\Channel\Progress as ProgressSignal;
@@ -25,16 +26,16 @@ class Progress extends AbstractHandler
             $calledNum = $signal->event->{'Caller-Destination-Number'};
         }
 
-        $calledNum = ltrim($calledNum, '+');
+        $calledNum = ltrim(TypeHelper::toString($calledNum), '+');
         $callerNum = '';
 
         if (isset($signal->event->{'Caller-Caller-ID-Number'})) {
-            $callerNum = ltrim($signal->event->{'Caller-Caller-ID-Number'}, '+');
+            $callerNum = ltrim(TypeHelper::toString($signal->event->{'Caller-Caller-ID-Number'}), '+');
         }
 
         $callUuid = isset($signal->event->{'Unique-ID'}) ? $signal->event->{'Unique-ID'} : '';
 
-        $this->app->signalProducer->logger->debug("Call from {$callerNum} to {$calledNum} Ringing for RequestUUID {$signal->event->{$reqUuidVar}}");
+        $this->app->signalProducer->logger->debug("Call from {$callerNum} to {$calledNum} Ringing for RequestUUID " . TypeHelper::toString($signal->event->{$reqUuidVar}));
 
         return [
             'RestApiServer' => $this->getRestServerAdvertisedHost(),

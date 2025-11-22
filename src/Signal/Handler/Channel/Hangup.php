@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RTCKit\Eqivo\Signal\Handler\Channel;
 
 use RTCKit\Eqivo\Signal\Handler\AbstractHandler;
+use RTCKit\Eqivo\TypeHelper;
 
 use RTCKit\FiCore\Signal\AbstractSignal;
 use RTCKit\FiCore\Signal\Channel\Hangup as HangupSignal;
@@ -41,7 +42,8 @@ class Hangup extends AbstractHandler
             $direction = 'outbound';
 
             if (!isset($signal->attn)) {
-                $this->app->signalProducer->logger->debug("No Hangup Dequence for Outgoing Outgoing Call {$payload['CallUUID']}, RequestUUID {$signal->originateJob->uuid}");
+                $callUuid = TypeHelper::toString($payload['CallUUID']);
+                $this->app->signalProducer->logger->debug("No Hangup Dequence for Outgoing Outgoing Call {$callUuid}, RequestUUID {$signal->originateJob->uuid}");
             }
 
             $aLegRequestUuidVar = "variable_{$this->app->config->appPrefix}_request_uuid";
@@ -49,33 +51,44 @@ class Hangup extends AbstractHandler
             $payload['RequestUUID'] = $signal->originateJob->uuid;
 
             if (isset($signal->event->variable_sip_h_Diversion)) {
+                $diversionStr = '';
                 try {
-                    $diversion = NameAddrHeader::parse([(string)$signal->event->variable_sip_h_Diversion]);
+                    $diversionStr = TypeHelper::toString($signal->event->variable_sip_h_Diversion);
+                    $diversion = NameAddrHeader::parse([$diversionStr]);
 
                     if (isset($diversion->uri, $diversion->uri->user)) {
-                        $payload['ForwardedFrom'] = ltrim($diversion->uri->user, '+');
+                        $payload['ForwardedFrom'] = ltrim(TypeHelper::toString($diversion->uri->user), '+');
                     }
                 } catch (SIPException $e) {
-                    $this->app->signalProducer->logger->error("Cannot parse Diversion SIP header '{$signal->event->variable_sip_h_Diversion}'");
+                    $this->app->signalProducer->logger->error("Cannot parse Diversion SIP header '{$diversionStr}'");
                 }
             }
 
-            if (isset($signal->event->{'Caller-Unique-ID'}, $signal->event->{'Caller-Unique-ID'}[0])) {
-                $payload['ALegUUID'] = $signal->event->{'Caller-Unique-ID'};
+            if (isset($signal->event->{'Caller-Unique-ID'})) {
+                $callerUniqueId = TypeHelper::toString($signal->event->{'Caller-Unique-ID'});
+                if ($callerUniqueId !== '') {
+                    $payload['ALegUUID'] = $callerUniqueId;
+                }
             }
 
-            if (isset($signal->event->{$aLegRequestUuidVar}, $signal->event->{$aLegRequestUuidVar}[0])) {
-                $payload['ALegRequestUUID'] = $signal->event->{$aLegRequestUuidVar};
+            if (isset($signal->event->{$aLegRequestUuidVar})) {
+                $aLegReqUuid = TypeHelper::toString($signal->event->{$aLegRequestUuidVar});
+                if ($aLegReqUuid !== '') {
+                    $payload['ALegRequestUUID'] = $aLegReqUuid;
+                }
             }
 
-            if (isset($signal->event->{$schedHangupIdVar}, $signal->event->{$schedHangupIdVar}[0])) {
-                $payload['ScheduledHangupId'] = $signal->event->{$schedHangupIdVar};
+            if (isset($signal->event->{$schedHangupIdVar})) {
+                $schedHangupId = TypeHelper::toString($signal->event->{$schedHangupIdVar});
+                if ($schedHangupId !== '') {
+                    $payload['ScheduledHangupId'] = $schedHangupId;
+                }
             }
         } elseif (isset($signal->channel)) {
             $hangupSigVar = "variable_{$this->app->config->appPrefix}_hangup_attn";
 
             if (isset($signal->event->{$hangupSigVar})) {
-                $signal->attn = $signal->event->{$hangupSigVar};
+                $signal->attn = TypeHelper::toString($signal->event->{$hangupSigVar});
 
                 $this->app->signalProducer->logger->debug("Using Hangup Sequence for CallUUID {$signal->channel->uuid}");
             } else {
@@ -86,11 +99,11 @@ class Hangup extends AbstractHandler
 
                     $this->app->signalProducer->logger->debug("Using Hangup Sequence from DefaultHangupSequence for CallUUID {$signal->channel->uuid}");
                 } elseif (isset($signal->event->{$answerUrlVar})) {
-                    $signal->attn = $signal->event->{$answerUrlVar};
+                    $signal->attn = TypeHelper::toString($signal->event->{$answerUrlVar});
 
                     $this->app->signalProducer->logger->debug("Using Hangup Sequence from AnswerSequence for CallUUID {$signal->channel->uuid}");
                 } elseif (isset($this->app->config->defaultAnswerUrl)) {
-                    $signal->attn = $this->app->config->defaultAnswerUrl;
+                    $signal->attn = TypeHelper::toString($this->app->config->defaultAnswerUrl);
 
                     $this->app->signalProducer->logger->debug("Using Hangup Sequence from DefaultAnswerSequence for CallUUID {$signal->channel->uuid}");
                 }
@@ -112,7 +125,7 @@ class Hangup extends AbstractHandler
                 $payload['To'] = $signal->event->{$calledNumVar};
             }
 
-            $payload['To'] = ltrim($payload['To'], '+');
+            $payload['To'] = ltrim(TypeHelper::toString($payload['To']), '+');
             $callerNum = isset($signal->event->{'Caller-Caller-ID-Number'}) ? $signal->event->{'Caller-Caller-ID-Number'} : '';
             $direction = isset($signal->event->{'Call-Direction'}) ? $signal->event->{'Call-Direction'} : '';
 
