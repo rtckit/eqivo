@@ -7,6 +7,7 @@ namespace RTCKit\Eqivo\Config;
 use InvalidArgumentException;
 
 use Monolog\Level;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\Config\{
     AbstractSet,
     Core,
@@ -156,14 +157,14 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['rest_server']['LOG_LEVEL'])) {
                 try {
-                    $config->restServerLogLevel = $config->eslClientLogLevel = Level::fromName($legacy['rest_server']['LOG_LEVEL']);
+                    $config->restServerLogLevel = $config->eslClientLogLevel = Level::fromName(TypeHelper::toLogLevel($legacy['rest_server']['LOG_LEVEL']));
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (rest_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $e->getMessage() . PHP_EOL);
                 }
             }
 
-            if (isset($legacy['rest_server']['LOG_TYPE'])) {
+            if (isset($legacy['rest_server']['LOG_TYPE']) && is_string($legacy['rest_server']['LOG_TYPE'])) {
                 if ($legacy['rest_server']['LOG_TYPE'] !== 'stdout') {
                     fwrite(STDERR, 'Unknown LOG_TYPE (rest_server) line in legacy configuration file: ' . $legacy['rest_server']['LOG_TYPE'] . PHP_EOL);
                 }
@@ -200,25 +201,29 @@ class LegacyConfigFile implements ResolverInterface
 
             if (isset($legacy['outbound_server']['LOG_LEVEL'])) {
                 try {
-                    $config->eslServerLogLevel = Level::fromName($legacy['outbound_server']['LOG_LEVEL']);
+                    $config->eslServerLogLevel = Level::fromName(TypeHelper::toLogLevel($legacy['outbound_server']['LOG_LEVEL']));
                 } catch (InvalidArgumentException $e) {
                     fwrite(STDERR, 'Malformed LOG_LEVEL (outbound_server) line in legacy configuration file' . PHP_EOL);
                     fwrite(STDERR, $e->getMessage() . PHP_EOL);
                 }
             }
 
-            if (isset($legacy['outbound_server']['LOG_TYPE'])) {
+            if (isset($legacy['outbound_server']['LOG_TYPE']) && is_string($legacy['outbound_server']['LOG_TYPE'])) {
                 if ($legacy['outbound_server']['LOG_TYPE'] !== 'stdout') {
                     fwrite(STDERR, 'Unknown LOG_TYPE (outbound_server) line in legacy configuration file: ' . $legacy['outbound_server']['LOG_TYPE'] . PHP_EOL);
                 }
             }
 
-            if (!isset($config->userName) && isset($legacy['rest_server']['USER'])) {
-                $config->userName = $legacy['rest_server']['USER'];
+            if (!isset($config->userName) && isset($legacy['rest_server'])) {
+                if (is_array($legacy['rest_server']) && isset($legacy['rest_server']['USER'])) {
+                    $config->userName = TypeHelper::toString($legacy['rest_server']['USER']);
+                }
             }
 
-            if (!isset($config->groupName) && isset($legacy['rest_server']['GROUP'])) {
-                $config->groupName = $legacy['rest_server']['GROUP'];
+            if (!isset($config->groupName) && isset($legacy['rest_server'])) {
+                if (is_array($legacy['rest_server']) && isset($legacy['rest_server']['GROUP'])) {
+                    $config->groupName = TypeHelper::toString($legacy['rest_server']['GROUP']);
+                }
             }
         }
     }

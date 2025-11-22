@@ -16,6 +16,7 @@ use RTCKit\Eqivo\Exception\AuthException;
 
 use RTCKit\Eqivo\Rest\Inquiry\AbstractInquiry;
 use RTCKit\Eqivo\Rest\Response\AbstractResponse;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
 use RTCKit\Eqivo\Rest\View\Error as ErrorView;
 use Throwable;
@@ -81,7 +82,10 @@ trait AuthenticatedTrait
 
     protected function authenticate(ServerRequestInterface $request): PromiseInterface
     {
-        return $this->validateIpAddress($request->getServerParams()['REMOTE_ADDR'])
+        $serverParams = $request->getServerParams();
+        $remoteAddr = TypeHelper::toString($serverParams['REMOTE_ADDR'] ?? null);
+
+        return $this->validateIpAddress($remoteAddr)
             ->then(function () use ($request): PromiseInterface {
                 $auth = $request->getHeaderLine('Authorization');
 

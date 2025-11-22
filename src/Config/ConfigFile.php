@@ -7,6 +7,7 @@ namespace RTCKit\Eqivo\Config;
 use InvalidArgumentException;
 use Monolog\Level;
 
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\Config\{
     AbstractSet,
     Core,
@@ -202,7 +203,7 @@ class ConfigFile implements ResolverInterface
 
         if (isset($input['restServerLogLevel'])) {
             try {
-                $config->restServerLogLevel = Level::fromName($input['restServerLogLevel']);
+                $config->restServerLogLevel = Level::fromName(TypeHelper::toLogLevel($input['restServerLogLevel']));
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `restServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
@@ -276,15 +277,15 @@ class ConfigFile implements ResolverInterface
 
         if (isset($input['eslServerLogLevel'])) {
             try {
-                $config->eslServerLogLevel = Level::fromName($input['eslServerLogLevel']);
+                $config->eslServerLogLevel = Level::fromName(TypeHelper::toLogLevel($input['eslServerLogLevel']));
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `eslServerLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }
         }
 
-        if (isset($input['eslClientLogLevel'])) {
+        if (isset($input['eslClientLogLevel']) && isset($input['inboundServerLogLevel'])) {
             try {
-                $config->eslClientLogLevel = Level::fromName($input['inboundServerLogLevel']);
+                $config->eslClientLogLevel = Level::fromName(TypeHelper::toLogLevel($input['inboundServerLogLevel']));
             } catch (InvalidArgumentException $e) {
                 fwrite(STDERR, 'Malformed `eslClientLogLevel` parameter in configuration file: ' . $e->getMessage() . PHP_EOL);
             }

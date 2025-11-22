@@ -20,6 +20,7 @@ use RTCKit\Eqivo\Rest\Inquiry\V0_1\Play as PlayInquiry;
 use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\Play as PlayResponse;
 use RTCKit\Eqivo\Rest\View\V0_1\Play as PlayView;
+use RTCKit\Eqivo\TypeHelper;
 
 use RTCKit\FiCore\Switch\CallLegEnum;
 
@@ -100,7 +101,7 @@ class Play implements ControllerInterface
             return;
         }
 
-        $inquiry->Legs ??= static::DEFAULT_LEG->value;
+        $inquiry->Legs = TypeHelper::toString($inquiry->Legs ?? (static::DEFAULT_LEG instanceof \BackedEnum ? static::DEFAULT_LEG->value : static::DEFAULT_LEG));
 
         if (!CallLegEnum::tryFrom($inquiry->Legs)) {
             $response->Message = PlayResponse::MESSAGE_INVALID_LEG;
@@ -109,12 +110,11 @@ class Play implements ControllerInterface
             return;
         }
 
-        if (!isset($inquiry->Length)) {
-            $inquiry->Length = static::DEFAULT_LENGTH;
-        } else {
-            $inquiry->Length = (int)$inquiry->Length;
+        if (isset($inquiry->Length)) {
+            $length = TypeHelper::toInt($inquiry->Length);
+            $inquiry->Length = $length;
 
-            if ($inquiry->Length < 1) {
+            if ($length < 1) {
                 $response->Message = PlayResponse::MESSAGE_INVALID_LENGTH;
                 $response->Success = false;
 
@@ -122,10 +122,11 @@ class Play implements ControllerInterface
             }
         }
 
-        $inquiry->delimiter ??= static::DEFAULT_DELIMITER;
-        $inquiry->soundList = explode($inquiry->delimiter, $inquiry->Sounds);
+        $inquiry->delimiter = TypeHelper::toString($inquiry->delimiter ?? static::DEFAULT_DELIMITER);
+        $delimiterStr = $inquiry->delimiter !== '' ? $inquiry->delimiter : ',';
+        $inquiry->soundList = explode($delimiterStr, $inquiry->Sounds);
 
-        if (!isset($inquiry->soundList[0])) {
+        if (empty($inquiry->Sounds)) {
             $response->Message = PlayResponse::MESSAGE_INVALID_SOUNDS;
             $response->Success = false;
         }

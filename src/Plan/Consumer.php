@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace RTCKit\Eqivo\Plan;
 
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\AbstractApp;
 use RTCKit\Eqivo\Signal\Channel as ChannelSignal;
 use RTCKit\FiCore\Plan\Consumer as FiCoreConsumer;
@@ -53,12 +54,12 @@ class Consumer extends FiCoreConsumer
 
                                 if (isset($event->{'Signal-Attn'})) {
                                     $dtmfSignal = new ChannelSignal\DTMF();
-                                    $dtmfSignal->attn = $event->{'Signal-Attn'};
+                                    $dtmfSignal->attn = TypeHelper::toString($event->{'Signal-Attn'});
                                     $dtmfSignal->channel = $channel;
-                                    $dtmfSignal->tones = isset($event->{'Digits-Match'}) ? $event->{'Digits-Match'} : '';
+                                    $dtmfSignal->tones = isset($event->{'Digits-Match'}) ? TypeHelper::toString($event->{'Digits-Match'}) : '';
 
                                     if (isset($event->{'variable_bridge_uuid'})) {
-                                        $dtmfSignal->bridged = $event->{'variable_bridge_uuid'};
+                                        $dtmfSignal->bridged = TypeHelper::toString($event->{'variable_bridge_uuid'});
                                     }
 
                                     $this->app->signalProducer->produce($dtmfSignal);

@@ -16,6 +16,7 @@ use React\Promise\{
 
 use RTCKit\ESL;
 use RTCKit\Eqivo\Signal\Channel\Bridge as BridgeSignal;
+use RTCKit\Eqivo\TypeHelper;
 use RTCKit\FiCore\Plan\{
     AbstractElement,
     HandlerInterface,
@@ -203,7 +204,7 @@ class Handler implements HandlerInterface
             })
             ->then(function (Event $event) use ($element): PromiseInterface {
                 if ($event->{'Event-Name'} === EventEnum::CHANNEL_UNBRIDGE->value) {
-                    $element->bLegUuid = isset($event->{'variable_bridge_uuid'}) ? $event->{'variable_bridge_uuid'} : '';
+                    $element->bLegUuid = TypeHelper::toString($event->{'variable_bridge_uuid'} ?? null);
 
                     return $this->app->planConsumer->waitForEvent($element->channel, self::EVENT_TIMEOUT, true);
                 }
@@ -217,7 +218,7 @@ class Handler implements HandlerInterface
                 $promises = [];
 
                 if (isset($event->variable_originate_disposition)) {
-                    $hangupCause = $event->variable_originate_disposition;
+                    $hangupCause = TypeHelper::toString($event->variable_originate_disposition);
                     $element->hangupCause = HangupCauseEnum::from($hangupCause);
 
                     if ($hangupCause === HangupCauseEnum::ORIGINATOR_CANCEL->value) {
@@ -251,9 +252,9 @@ class Handler implements HandlerInterface
                     $reason = $reasons['reason'];
                 } else {
                     if (!empty($reasons['bridge_hangup_cause'])) {
-                        $reason = $reasons['bridge_hangup_cause'] . ' (B leg)';
+                        $reason = TypeHelper::toString($reasons['bridge_hangup_cause']) . ' (B leg)';
                     } elseif (!empty($reasons['hangup_cause'])) {
-                        $reason = $reasons['hangup_cause'] . ' (A leg)';
+                        $reason = TypeHelper::toString($reasons['hangup_cause']) . ' (A leg)';
                     }
                 }
 
@@ -261,7 +262,7 @@ class Handler implements HandlerInterface
                     $reason = HangupCauseEnum::NORMAL_CLEARING->value . ' (A leg)';
                 }
 
-                $this->app->planConsumer->logger->info('Dial Finished with reason: ' . $reason);
+                $this->app->planConsumer->logger->info('Dial Finished with reason: ' . TypeHelper::toString($reason));
 
                 return all([
                     'sched_del' => $element->channel->client->bgApi(
@@ -277,7 +278,7 @@ class Handler implements HandlerInterface
                     $signal = new BridgeSignal();
 
                     if (isset($element->event)) {
-                        $signal->timestamp = (int)$element->event->{'Event-Date-Timestamp'} / 1e6;
+                        $signal->timestamp = TypeHelper::toFloat($element->event->{'Event-Date-Timestamp'}) / 1e6;
                         $signal->event = $element->event;
                     } else {
                         $signal->timestamp = microtime(true);

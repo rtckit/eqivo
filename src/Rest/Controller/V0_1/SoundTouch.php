@@ -20,6 +20,7 @@ use RTCKit\Eqivo\Rest\Inquiry\V0_1\SoundTouch as SoundTouchInquiry;
 use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\SoundTouch as SoundTouchResponse;
 use RTCKit\Eqivo\Rest\View\V0_1\SoundTouch as SoundTouchView;
+use RTCKit\Eqivo\TypeHelper;
 
 use RTCKit\FiCore\Switch\DirectionEnum;
 
@@ -86,9 +87,9 @@ class SoundTouch implements ControllerInterface
             return;
         }
 
-        $inquiry->AudioDirection ??= static::DEFAULT_AUDIO_DIRECTION->value;
+        $inquiry->AudioDirection = TypeHelper::toString($inquiry->AudioDirection ?? (static::DEFAULT_AUDIO_DIRECTION instanceof \BackedEnum ? static::DEFAULT_AUDIO_DIRECTION->value : static::DEFAULT_AUDIO_DIRECTION));
 
-        if (!in_array($inquiry->AudioDirection, ['in', 'out'])) {
+        if (!in_array($inquiry->AudioDirection, ['in', 'out'], true)) {
             $response->Message = SoundTouchResponse::MESSAGE_INVALID_AUDIO_DIRECTION;
             $response->Success = false;
 

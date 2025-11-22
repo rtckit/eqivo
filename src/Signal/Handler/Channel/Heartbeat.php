@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace RTCKit\Eqivo\Signal\Handler\Channel;
 
 use RTCKit\Eqivo\Signal\Handler\AbstractHandler;
+use RTCKit\Eqivo\TypeHelper;
 
 use RTCKit\FiCore\Signal\AbstractSignal;
 use RTCKit\FiCore\Signal\Channel\Heartbeat as HeartbeatSignal;
@@ -15,7 +16,7 @@ class Heartbeat extends AbstractHandler
     {
         assert($signal instanceof HeartbeatSignal);
 
-        $answeredAt = (float)$signal->event->{'Caller-Channel-Answered-Time'} / 1e6;
+        $answeredAt = TypeHelper::toFloat($signal->event->{'Caller-Channel-Answered-Time'}) / 1e6;
         $elapsed = $signal->timestamp - $answeredAt;
 
         return (array_merge($this->app->planProducer->getChannelPayload($signal->channel), [

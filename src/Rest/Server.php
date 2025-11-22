@@ -27,7 +27,8 @@ use RTCKit\Eqivo\Rest\Response\Error as ErrorResponse;
 use RTCKit\Eqivo\{
     App,
     Config,
-    EventEnum
+    EventEnum,
+    TypeHelper
 };
 
 use Throwable;
@@ -170,11 +171,14 @@ class Server extends AbstractServer
         return $this->dispatch($request)
             ->then(function (Response $response) use ($request, $now) {
                 $delta = hrtime(true) - $now;
-                $ip = $request->getHeaderLine('x-forwarded-for') ?: $request->getServerParams()['REMOTE_ADDR'];
+                $serverParams = $request->getServerParams();
+                $ip = $request->getHeaderLine('x-forwarded-for') ?: TypeHelper::toString($serverParams['REMOTE_ADDR'] ?? null);
                 $method = $request->getMethod();
                 $path = $request->getUri()->getPath();
+                /** @phpstan-ignore method.internalClass */
                 $version = $response->getProtocolVersion();
                 $code = $response->getStatusCode();
+                /** @phpstan-ignore method.internalClass */
                 $size = $response->getBody()->getSize();
                 $delta /= 1e9;
 

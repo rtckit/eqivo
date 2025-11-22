@@ -5,7 +5,7 @@
     "cores": [
         {
             "eslHost": "127.0.0.1",
-            "eslPort": 8021,
+            "eslPort": "8021",
             "eslPassword": "ClueCon"
         }
     ],

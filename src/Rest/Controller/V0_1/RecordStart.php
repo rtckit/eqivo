@@ -21,6 +21,7 @@ use RTCKit\Eqivo\Rest\Response\AbstractResponse;
 use RTCKit\Eqivo\Rest\Response\V0_1\RecordStart as RecordStartResponse;
 
 use RTCKit\Eqivo\Rest\View\V0_1\RecordStart as RecordStartView;
+use RTCKit\Eqivo\TypeHelper;
 
 /**
  * @OA\Post(
@@ -90,22 +91,25 @@ class RecordStart implements ControllerInterface
         }
 
         if (!isset($inquiry->FileFormat)) {
+            /** @phpstan-ignore assign.propertyType */
             $inquiry->FileFormat = static::DEFAULT_RECORD_FORMAT;
         } else {
-            if (!in_array($inquiry->FileFormat, static::RECORD_FILE_FORMATS)) {
-                $response->Message = RecordStartResponse::MESSAGE_BAD_FILE_FORMAT . " '" . implode("', '", static::RECORD_FILE_FORMATS) . "'";
+            $fileFormat = TypeHelper::toString($inquiry->FileFormat);
+            $inquiry->FileFormat = $fileFormat;
+            $formats = static::RECORD_FILE_FORMATS;
+            if (is_array($formats) && !in_array($fileFormat, $formats, true)) {
+                $response->Message = RecordStartResponse::MESSAGE_BAD_FILE_FORMAT . " '" . implode("', '", $formats) . "'";
                 $response->Success = false;
 
                 return;
             }
         }
 
-        if (!isset($inquiry->TimeLimit)) {
-            $inquiry->TimeLimit = static::DEFAULT_TIME_LIMIT;
-        } else {
-            $inquiry->TimeLimit = (int)$inquiry->TimeLimit;
+        if (isset($inquiry->TimeLimit)) {
+            $timeLimit = TypeHelper::toInt($inquiry->TimeLimit);
+            $inquiry->TimeLimit = $timeLimit;
 
-            if ($inquiry->TimeLimit < 1) {
+            if ($timeLimit <= 0) {
                 $response->Message = RecordStartResponse::MESSAGE_INVALID_TIME_LIMIT;
                 $response->Success = false;
 
